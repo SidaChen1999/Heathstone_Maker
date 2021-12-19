@@ -68,7 +68,7 @@ def check_state(var, simple=False):
         return var
     if var['last_state'] == var['state']:
         if (datetime.now() - var['timestamp']).seconds > timeout:
-            var = error_state(var)
+            error_state(var)
             var['timestamp'] = datetime.now()
     else:
         var['timestamp'] = datetime.now()
@@ -123,7 +123,8 @@ def error_state(var):
         pg.click(x=1280, y=1000, clicks=2, interval=1, duration=0.5)
         while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
             time.sleep(2)
-            if check_state(var, simple=True) != 0:
+            check_state(var, simple=True)
+            if var['state'] != 0:
                 var['timestamp'] = datetime.now()
                 break
             pg.click(x=1280, y=1000)
@@ -133,11 +134,11 @@ def error_state(var):
         # while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
         #     time.sleep(2)
         #     pg.click(x=1280, y=1000)
-        #     if check_state(simple=True) != 0:
+        #     if check_state(var, simple=True) != 0:
         #         break
         #     if (datetime.now() - var['timestamp']).seconds > timeout:
         #         return var
-        return var
+    return var
 
 last_minion = 0
 last_card = 0
@@ -265,12 +266,12 @@ def killProcess(processName):
 
 while keyboard.is_pressed('q') == False:
     try:
-        var = check_state(var)
+        check_state(var)
         print('state: ', var['state'])
 
         # out of game
         if var['state'] == 0:
-            var = out_game(var)
+            out_game(var)
 
         # my turn
         elif var['state'] == 1:
@@ -283,7 +284,7 @@ while keyboard.is_pressed('q') == False:
     except (KeyboardInterrupt, pg.FailSafeException):
         break
     except:
-        var = error_state(var)
+        error_state(var)
         timestamp = datetime.now()
 
 

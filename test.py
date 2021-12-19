@@ -122,4 +122,5 @@ var = {'win': 0, 'loss': 0, 'error': 0}
 # try_to_change_string_reference(var)
 # print('after, outer_string =', var)
 var['error'] += 1
+print(type(var))
 print(var['error'])
