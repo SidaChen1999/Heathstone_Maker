@@ -111,16 +111,6 @@ def my_turn():
 
 # pg.press('space', presses=1000, interval=0.5)
 
-def try_to_change_string_reference(the_string):
-    print('got', the_string)
-    the_string['win'] += + 1
-    print('set to', the_string)
-
-var = {'win': 0, 'loss': 0, 'error': 0}
-
-# print('before, outer_string =', var)
-# try_to_change_string_reference(var)
-# print('after, outer_string =', var)
+var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
 var['error'] += 1
-print(type(var))
-print(var['error'])
+print(var)

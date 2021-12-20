@@ -49,13 +49,15 @@ class App(QWidget):
     def __init__(self):
         super().__init__()
         self.started = False
-        self.stats = {'win': 0, 'loss': 0, 'errors': 0}
+        self.var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
         self.states  = 0 # 0 = out of game; 1 = my turn; 2 = enemy turn; 3 = error
         self.last_states = 0
         self.timestamp = datetime.now()
         self.last_minion = 0
         self.last_card = 0
 
+        self.region = [QPushButton('NA', self), QPushButton('CN', self)]
+        
         self.output = QLabel('', self)
         self.output.setFont(font)
         self.start = QPushButton('Start Script', self)

@@ -3,19 +3,25 @@ import pyautogui as pg
 import time
 import keyboard
 import psutil
-from datetime import datetime, timedelta, tzinfo, timezone
+from datetime import datetime
+import csv
+import logging
+import traceback
+FORMAT = '%(asctime)s %(message)s'
+logging.basicConfig(filename='std.log', format=FORMAT, filemode='w')
+logger = logging.getLogger('Hearthstone')
+logger.setLevel(logging.DEBUG) 
 
-while keyboard.is_pressed('s') == False:
-    time.sleep(0.05)
 print("script starts")
+logger.info("script starts")
 
-var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now(),
-    'state': 0, 'last_state': 0}
+var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
 # win = 0
 # loss = 0
 # errors = 0
 # states = 0 # 0 = out of game; 1 = my turn; 2 = enemy turn; 3 = error
 # last_states = 0
+region = 'NA'
 img_start = 'G:\Gaming Script\start.jpg'
 img_loss = 'G:\Gaming Script\loss.jpg'
 img_win = 'G:\Gaming Script\win.jpg'
@@ -50,33 +56,32 @@ def delta(a, b):
     return tuple_abs_sum(tuple_sub(a, b))
 epsilon = 20
 
-# timestamp = datetime.now()
-def check_state(var, simple=False):
-    var['last_state'] = var['state']
+def check_state(var, last_state, simple=False):
     cor_enemy_turn = pg.locateOnScreen(img_enemy_turn, grayscale=False, confidence=confi)
     cor_my_turn = pg.locateOnScreen(img_my_turn, grayscale=False, confidence=confi)
     cor_my_turn1 = pg.locateOnScreen(img_my_turn1, grayscale=False, confidence=confi)
     if cor_enemy_turn != None:
-        var['state'] = 2
+        next_state = 2
     elif cor_my_turn != None:
-        var['state'] = 1
+        next_state = 1
     elif cor_my_turn1 != None:
-        var['state'] = 1
+        next_state = 1
     else:
-        var['state'] = 0
+        next_state = 0
     if simple:
-        return var
-    if var['last_state'] == var['state']:
+        return next_state
+    if last_state == next_state:
         if (datetime.now() - var['timestamp']).seconds > timeout:
             error_state(var)
             var['timestamp'] = datetime.now()
     else:
         var['timestamp'] = datetime.now()
-    return var
+    return next_state
 
 def error_state(var):
     var['error'] += 1
-    print('error', var['error'])
+    print('error: %i' % var['error'])
+    logger.error('error: %i', var['error'])
     flag = False
     cor_play = pg.locateOnScreen(img_play, grayscale=True, confidence=confi)
     if cor_play != None:
@@ -97,7 +102,7 @@ def error_state(var):
                 pg.click(x=x,y=y, duration=0.5)
                 time.sleep(1)
             else:
-                return var
+                return
         x, y = pg.center(pg.locateOnScreen(img_play, grayscale=True, confidence=confi))
         pg.click(x=x,y=y, duration=0.5)
         time.sleep(10)
@@ -115,30 +120,31 @@ def error_state(var):
             time.sleep(10)
         flag = True
     if flag:
-        # CN
-        while pg.locateOnScreen(img_click, grayscale=False, confidence=confi) == None:
-            time.sleep(2)
-            if (datetime.now() - var['timestamp']).seconds > timeout:
-                    return var
-        pg.click(x=1280, y=1000, clicks=2, interval=1, duration=0.5)
-        while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
-            time.sleep(2)
-            check_state(var, simple=True)
-            if var['state'] != 0:
-                var['timestamp'] = datetime.now()
-                break
-            pg.click(x=1280, y=1000)
-            if (datetime.now() - var['timestamp']).seconds > timeout:
-                    return var
-        # NA
-        # while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
-        #     time.sleep(2)
-        #     pg.click(x=1280, y=1000)
-        #     if check_state(var, simple=True) != 0:
-        #         break
-        #     if (datetime.now() - var['timestamp']).seconds > timeout:
-        #         return var
-    return var
+        if region == 'CN':
+            # CN
+            while pg.locateOnScreen(img_click, grayscale=False, confidence=confi) == None:
+                time.sleep(2)
+                if (datetime.now() - var['timestamp']).seconds > timeout:
+                        return
+            pg.click(x=1280, y=1000, clicks=2, interval=1, duration=0.5)
+            while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
+                time.sleep(2)
+                check_state(var, state, simple=True)
+                if state != 0:
+                    # var['timestamp'] = datetime.now()
+                    break
+                pg.click(x=1280, y=1000)
+                if (datetime.now() - var['timestamp']).seconds > timeout:
+                        return
+        else:
+            # NA
+            while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
+                time.sleep(2)
+                pg.click(x=1280, y=1000)
+                if check_state(var, state, simple=True) != 0:
+                    break
+                if (datetime.now() - var['timestamp']).seconds > timeout:
+                    return
 
 last_minion = 0
 last_card = 0
@@ -215,7 +221,7 @@ def out_game(var):
         while pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
             time.sleep(0.5)
             if (datetime.now() - var['timestamp']).seconds > timeout:
-                return var
+                return
         x, y = pg.center(pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi))
         pg.click(x=x,y=y, duration=0.5)
         time.sleep(2)
@@ -225,26 +231,27 @@ def out_game(var):
         pg.click(x=x,y=y, duration=0.3)
         time.sleep(2)
     elif cor_play != None:
-        error_state(var['error'])
+        error_state(var)
         var['timestamp'] = datetime.now()
 
     elif pg.locateOnScreen(img_loss, grayscale=True, confidence=confi) != None:
         var['loss'] += 1
-        print('loss: ', var['loss'], '; win: ', var['win'])
+        print('win: %i; loss: %i' % (var['win'], var['loss']))
+        logger.info('win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             pg.click(x=1280, y=1050)
             time.sleep(1)
             if (datetime.now() - var['timestamp']).seconds > timeout:
-                    return var
-        # pg.click(clicks=5, interval=1, duration=0.5)
+                    return
     elif pg.locateOnScreen(img_win, grayscale=True, confidence=confi) != None:
         var['win'] += 1
-        print('loss: ', var['loss'], '; win: ', var['win'])
+        print('win: %i; loss: %i' % (var['win'], var['loss']))
+        logger.info('win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             pg.click(x=1280, y=1050)
             time.sleep(1)
             if (datetime.now() - var['timestamp']).seconds > timeout:
-                    return var
+                    return
 
 def checkIfProcessRunning(processName):
     for proc in psutil.process_iter():
@@ -263,30 +270,51 @@ def killProcess(processName):
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-
+state = 1
 while keyboard.is_pressed('q') == False:
     try:
-        check_state(var)
-        print('state: ', var['state'])
+        state = check_state(var, state)
+        print('state: %i' % state)
+        logger.info('state: %i', state)
 
         # out of game
-        if var['state'] == 0:
+        if state == 0:
             out_game(var)
 
         # my turn
-        elif var['state'] == 1:
+        elif state == 1:
             my_turn(last_minion, last_card)
 
         # enemy turn
-        elif var['state'] == 2:
+        elif state == 2:
             time.sleep(1)
 
     except (KeyboardInterrupt, pg.FailSafeException):
         break
     except:
-        error_state(var)
-        timestamp = datetime.now()
+        logger.info(traceback.format_exc())
+        try:
+            error_state(var)
+            timestamp = datetime.now()
+        except:
+            logger.info(traceback.format_exc())
+            break
 
 
-print('loss: ', var['loss'], '; win: ', var['win'], '； error: ', var['error'])
+print('win: %i; loss: %i; error: %i' % (var['win'], var['loss'], var['error']))
+logger.info('win: %i; loss: %i; error: %i', var['win'], var['loss'], var['error'])
 print("script ends")
+logger.info("script ends")
+
+if var['loss'] != 0:
+    rows = []
+    with open('stats.csv', 'r', newline='') as csvfile:
+        csvreader = csv.reader(csvfile)
+        header = next(csvreader)
+        for row in csvreader:
+            rows.append(row)
+    with open('stats.csv', 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(header)
+        csvwriter.writerows(rows)
+        csvwriter.writerow([str(var[a]) for a in var])
