@@ -39,13 +39,13 @@ def check_state(var, last_state, simple=False):
     if last_state == next_state:
         if (datetime.now() - var['timestamp']).seconds > timeout:
             var['timestamp'] = datetime.now()
-            error_state(var)
+            error_state(var, logger)
             var['timestamp'] = datetime.now()
     else:
         var['timestamp'] = datetime.now()
     return next_state
 
-def error_state(var):
+def error_state(var, logger):
     var['error'] += 1
     logger.error('error: %i', var['error'])
     cor_play = pg.locateOnScreen(img_play, grayscale=True, confidence=confi)
@@ -82,7 +82,7 @@ def error_state(var):
             time.sleep(10)
     while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
         time.sleep(2)
-        pg.click(x=1280, y=1030)
+        pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
         if check_state(var, state, simple=True) != 0:
             break
         if (datetime.now() - var['timestamp']).seconds > timeout:
@@ -172,14 +172,14 @@ def out_game(var):
         pg.click(x=x,y=y, duration=0.3)
         time.sleep(2)
     elif cor_play != None:
-        error_state(var)
+        error_state(var, logger)
         var['timestamp'] = datetime.now()
 
     elif pg.locateOnScreen(img_loss, grayscale=True, confidence=confi) != None:
         var['loss'] += 1
         logger.info('win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
-            pg.click(x=1280, y=1030)
+            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
             time.sleep(1)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
@@ -187,7 +187,7 @@ def out_game(var):
         var['win'] += 1
         logger.info('win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
-            pg.click(x=1280, y=1030)
+            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
             time.sleep(1)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
@@ -205,8 +205,6 @@ def checkIfProcessRunning(processName, kill=False):
     return None
 
 if __name__ == '__main__':
-    user32 = ctypes.windll.user32
-    screensize = user32.GetSystemMetrics(0),  user32.GetSystemMetrics(1)
     FORMAT = '%(asctime)s %(message)s'
     log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H;%M;%S")+'.log'
     logging.basicConfig(filename=log_file_start, format=FORMAT, filemode='w')
@@ -217,18 +215,18 @@ if __name__ == '__main__':
     logger.addHandler(consoleHandler)
     var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
 
-    img_start = 'G:\Gaming Script\start.jpg'
-    img_loss = 'G:\Gaming Script\loss.jpg'
-    img_win = 'G:\Gaming Script\win.jpg'
-    img_confirm = 'G:\Gaming Script\confirm.jpg'
-    img_end_turn = 'G:\Gaming Script\end_turn.jpg'
-    img_enemy_turn = 'G:\Gaming Script\enemy_turn.jpg'
-    img_my_turn = 'G:\Gaming Script\my_turn.jpg'
-    img_my_turn1 = 'G:\Gaming Script\my_turn1.jpg'
-    img_traditional_game = 'G:\Gaming Script\\traditional_game.jpg'
-    img_play = 'G:\Gaming Script\play.jpg'
-    img_battlenet = 'G:\Gaming Script\\battlenet.jpg'
-    img_click = 'G:\Gaming Script\click.jpg'
+    img_start = 'pics/start.jpg'
+    img_loss = 'pics/loss.jpg'
+    img_win = 'pics/win.jpg'
+    img_confirm = 'pics/confirm.jpg'
+    img_end_turn = 'pics/end_turn.jpg'
+    img_enemy_turn = 'pics/enemy_turn.jpg'
+    img_my_turn = 'pics/my_turn.jpg'
+    img_my_turn1 = 'pics/my_turn1.jpg'
+    img_traditional_game = 'pics/traditional_game.jpg'
+    img_play = 'pics/play.jpg'
+    img_battlenet = 'pics//battlenet.jpg'
+    img_click = 'pics/click.jpg'
     # regions = (left, top, width, height)
     cards = (960, 1200, 600, 50)
     minions = (700, 700, 1050, 30)
@@ -238,6 +236,7 @@ if __name__ == '__main__':
     green2 = (208, 233, 97)
     red = (255, 255, 89)
     enemy_hero = (1298, 415)
+    waiting_pos = (1280, 1030)
     confi = 0.8
     timeout = 120 # seconds
     epsilon = 20
@@ -258,24 +257,24 @@ if __name__ == '__main__':
         except:
             logger.info(traceback.format_exc())
             try:
-                error_state(var)
+                error_state(var, logger)
                 timestamp = datetime.now()
             except:
                 logger.info(traceback.format_exc())
                 break
 
     logger.info('win: %i; loss: %i; error: %i; win rate: %.4f',
-        var['win'], var['loss'], var['error'], var['wins']/(var['win']+var['loss']))
+        var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss']))
     logger.info("script ends")
     rows = []
-    with open('G:\Gaming Script\dist\stats.csv', 'r', newline='') as csvfile:
+    with open('pics/dist\stats.csv', 'r', newline='') as csvfile:
         csvreader = csv.reader(csvfile)
         header = next(csvreader)
         for row in csvreader:
             rows.append(row)
     if var['loss'] != 0:
         rows.append([str(var[a]) for a in var])
-        with open('G:\Gaming Script\dist\stats.csv', 'w', newline='') as csvfile:
+        with open('pics/dist\stats.csv', 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(header)
             csvwriter.writerows(rows)
@@ -283,7 +282,7 @@ if __name__ == '__main__':
     for row in rows:
         wins += int(row[0])
         losses += int(row[1])
-    logger.info('total wins: %i, losses: %i, win rate: %.4f' %(wins, losses, wins/(wins+losses)))
+    logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
     logging.shutdown()
     log_file_end = 'log/'+datetime.now().strftime("%Y-%m-%d,%H;%M;%S")+'.log'
     os.rename(log_file_start, log_file_end)
