@@ -72,11 +72,11 @@ def checkIfProcessRunning(processName, kill=False):
             pass
     return None
 
-var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
+var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
 user32 = ctypes.windll.user32
 screensize = user32.GetSystemMetrics(0),  user32.GetSystemMetrics(1)
 print(screensize)
-game_window = (0, 0)
+game_window = (0, 0, 0, 0)
 id = checkIfProcessRunning("hearthstone")
 if id is not None:
     hwnds = get_hwnds_for_pid(id)
@@ -86,10 +86,11 @@ if id is not None:
         for win in wins:
             if hwnds[0] == win[0]:
                 game_window = win[1]
-                print(win[1])
+                print(game_window)
                 break
 # 1080P: (0, 0, 1936, 1119)
 # 1440P: (312, 160, 2248, 1279)
+
 img_start = 'pics/start.jpg'
 img_loss = 'pics/loss.jpg'
 img_win = 'pics/win.jpg'
@@ -97,13 +98,17 @@ img_confirm = 'pics/confirm.jpg'
 img_end_turn = 'pics/end_turn.jpg'
 img_enemy_turn = 'pics/enemy_turn.jpg'
 img_my_turn = 'pics/my_turn.jpg'
-img_traditional_game = 'pics/\traditional_game.jpg'
+img_traditional_game = 'pics/traditional_game.jpg'
 img_play = 'pics/play.jpg'
-img_battlenet = 'pics/\battlenet.jpg'
+img_battlenet = 'pics/battlenet.jpg'
 img_click = 'pics/click.jpg'
-cards = (960, 1200, 600, 50)
-minions = (700, 700, 1050, 30)
-hero = (1090, 980, 460, 50)
+
+cards = (game_window[0]+650, game_window[1]+990, 600, 50)
+minions = (game_window[0]+390, game_window[1]+540, 1050, 30)
+hero = (game_window[0]+780, game_window[1]+810, 460, 30)
+enemy_hero = ((game_window[0]+game_window[2])/2, game_window[1]+255)
+waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
+
 green = (213, 255, 139)
 green2 = (208, 233, 97)
 yellow = (255, 255, 12)
@@ -158,7 +163,7 @@ def my_turn(last_minion, last_card):
                 last_minion = x
                 # overcome wall
                 pg.click(enemy_hero, duration=0.3)
-                return
+                break
         if flag == 1:
             break
 
@@ -189,6 +194,25 @@ def my_turn(last_minion, last_card):
 # pic_cards.save('test_pics/cards.jpg')
 # pic_minions.save('test_pics/minions.jpg')
 # pic_hero.save('test_pics/hero.jpg')
+
+import csv
+rows = []
+with open('dist/stats.csv', 'r', newline='') as csvfile:
+    csvreader = csv.reader(csvfile)
+    header = next(csvreader)
+    for row in csvreader:
+        rows.append(row)
+if var['loss'] != 0:
+    rows.append([str(var[a]) for a in var])
+    with open('dist/stats.csv', 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(header)
+        csvwriter.writerows(rows)
+wins, losses = 0, 0
+for row in rows:
+    wins += int(row[0])
+    losses += int(row[1])
+print('ends')
 
 # pg.press('space', presses=1000, interval=0.5)
 
