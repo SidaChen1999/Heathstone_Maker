@@ -195,23 +195,23 @@ def my_turn(last_minion, last_card):
 # pic_minions.save('test_pics/minions.jpg')
 # pic_hero.save('test_pics/hero.jpg')
 
-import csv
-rows = []
-with open('dist/stats.csv', 'r', newline='') as csvfile:
-    csvreader = csv.reader(csvfile)
-    header = next(csvreader)
-    for row in csvreader:
-        rows.append(row)
-if var['loss'] != 0:
-    rows.append([str(var[a]) for a in var])
-    with open('dist/stats.csv', 'w', newline='') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(header)
-        csvwriter.writerows(rows)
-wins, losses = 0, 0
-for row in rows:
-    wins += int(row[0])
-    losses += int(row[1])
+# import csv
+# rows = []
+# with open('dist/stats.csv', 'r', newline='') as csvfile:
+#     csvreader = csv.reader(csvfile)
+#     header = next(csvreader)
+#     for row in csvreader:
+#         rows.append(row)
+# if var['loss'] != 0:
+#     rows.append([str(var[a]) for a in var])
+#     with open('dist/stats.csv', 'w', newline='') as csvfile:
+#         csvwriter = csv.writer(csvfile)
+#         csvwriter.writerow(header)
+#         csvwriter.writerows(rows)
+# wins, losses = 0, 0
+# for row in rows:
+#     wins += int(row[0])
+#     losses += int(row[1])
 print('ends')
 
 # pg.press('space', presses=1000, interval=0.5)

@@ -12,6 +12,7 @@ import win32con
 import win32gui
 import win32process
 import os
+from parameters import *
 
 def tuple_add(a:tuple, b:tuple):
     return tuple(map(lambda i, j: i + j, a, b))
@@ -102,9 +103,8 @@ def my_turn(last_minion, last_card):
             if delta(color, green) < epsilon or delta(color, yellow) < epsilon:
                 flag = 1
                 if last_card != x:
-                    pg.click(x+cards[0]-10, y+cards[1], duration=0.3)
+                    pg.click(x+cards[0]-5, y+cards[1], duration=0.3)
                     pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.3)
-                    # continue
                 else:
                     pg.click(x+cards[0]+10, y+cards[1], duration=0.3)
                     pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.3)
@@ -145,6 +145,7 @@ def my_turn(last_minion, last_card):
                 break
         if flag == 1:
             break
+    pg.rightClick(duration=0.1)
 
 def out_game(var):
     cor_start = pg.locateOnScreen(img_start, grayscale=True, confidence=confi)
@@ -177,7 +178,7 @@ def out_game(var):
 
     elif pg.locateOnScreen(img_loss, grayscale=True, confidence=confi) != None:
         var['loss'] += 1
-        logger.info('win: %i; loss: %i', var['win'], var['loss'])
+        logger.info('w: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
             time.sleep(1)
@@ -255,43 +256,23 @@ if __name__ == '__main__':
     var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
     state = 0
 
-    img_start = 'pics/start.jpg'
-    img_loss = 'pics/loss.jpg'
-    img_win = 'pics/win.jpg'
-    img_confirm = 'pics/confirm.jpg'
-    img_end_turn = 'pics/end_turn.jpg'
-    img_enemy_turn = 'pics/enemy_turn.jpg'
-    img_my_turn = 'pics/my_turn.jpg'
-    img_my_turn1 = 'pics/my_turn1.jpg'
-    img_traditional_game = 'pics/traditional_game.jpg'
-    img_play = 'pics/play.jpg'
-    img_battlenet = 'pics//battlenet.jpg'
-    img_click = 'pics/click.jpg'
-
-    green = (213, 255, 139)
-    yellow = (255, 255, 12)
-    green2 = (208, 233, 97)
-    red = (255, 255, 89)
-    confi = 0.8
-    timeout = 120 # seconds
-    epsilon = 15
-
     user32 = ctypes.windll.user32
     screensize = user32.GetSystemMetrics(0),  user32.GetSystemMetrics(1)
     waiting_pos = (screensize[0]/2, screensize[1]*0.75)
-    game_window = (0, 0, 0, 0)
+    game_window = default_game_window
     id = checkIfProcessRunning("hearthstone")
     if id is None:
         error_state(var, logger)
         id = checkIfProcessRunning("hearthstone")
-    hwnds = get_hwnds_for_pid(id)
-    wins = getWindowSizes()
-    if len(hwnds) != 0:
-        for win in wins:
-            if hwnds[0] == win[0]:
-                game_window = win[1]
-                print(game_window)
-                break
+    if id is not None:
+        hwnds = get_hwnds_for_pid(id)
+        wins = getWindowSizes()
+        if len(hwnds) != 0:
+            for win in wins:
+                if hwnds[0] == win[0]:
+                    game_window = win[1]
+                    break
+    logger.info('game window: (%i, %i, %i, %i)'%(game_window))
     # regions = (left, top, width, height)
     cards = (game_window[0]+650, game_window[1]+990, 600, 50)
     minions = (game_window[0]+390, game_window[1]+540, 1050, 30)
@@ -312,11 +293,14 @@ if __name__ == '__main__':
                 time.sleep(1)
         except (KeyboardInterrupt, pg.FailSafeException):
             break
+        except OSError:
+            logger.info(traceback.format_exc())
+            continue
         except:
             logger.info(traceback.format_exc())
             try:
                 error_state(var, logger)
-                timestamp = datetime.now()
+                var['timestamp'] = datetime.now()
             except:
                 logger.info(traceback.format_exc())
                 break
