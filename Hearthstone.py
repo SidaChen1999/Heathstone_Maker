@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 import pyautogui as pg
-import time
 import keyboard
 import psutil
 from datetime import datetime
 import csv
 import logging
 import traceback
-import ctypes
 import win32con
 import win32gui
 import win32process
@@ -46,44 +44,40 @@ def check_state(var, last_state, simple=False):
         var['timestamp'] = datetime.now()
     return next_state
 
-def error_state(var, logger):
+def error_state(var, logger: logging.Logger):
     var['error'] += 1
     logger.error('error: %i', var['error'])
-    cor_play = pg.locateOnScreen(img_play, grayscale=True, confidence=confi)
+    cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
     if cor_play != None:
-        x, y = pg.center(cor_play)
-        pg.click(x=x,y=y, duration=0.5)
-        time.sleep(10)
+        pg.click(cor_play, duration=0.5)
+        pg.sleep(10)
     else:
         proc = checkIfProcessRunning('hearthstone', kill=True)
-        time.sleep(2)
+        pg.sleep(2)
         if proc == None:
-            cor_battlenet = pg.locateOnScreen(img_battlenet, grayscale=True, confidence=confi)
+            cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
             if cor_battlenet != None:
-                x, y = pg.center(cor_battlenet)
-                pg.click(x=x,y=y, duration=0.5)
-                time.sleep(2)
+                pg.click(cor_battlenet, duration=0.5)
+                pg.sleep(1)
             else:
                 return
         else:
-            cor_play = pg.locateOnScreen(img_play, grayscale=True, confidence=confi)
+            cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
             if cor_play == None:
-                cor_battlenet = pg.locateOnScreen(img_battlenet, grayscale=True, confidence=confi)
+                cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
                 if cor_battlenet != None:
-                    x, y = pg.center(cor_battlenet)
-                    pg.click(x=x,y=y, duration=0.5)
-                    time.sleep(2)
+                    pg.click(cor_battlenet, duration=0.5)
+                    pg.sleep(1)
                 else:
                     return
-        cor_play = pg.locateOnScreen(img_play, grayscale=True, confidence=confi)
+        cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
         if cor_play != None:
-            x, y = pg.center(cor_play)
             var['timestamp'] = datetime.now()
-            pg.click(x=x,y=y, duration=0.5)
-            time.sleep(10)
-    while pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
-        time.sleep(2)
-        pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
+            pg.click(cor_play, duration=0.5)
+            pg.sleep(10)
+    while pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
+        pg.sleep(2)
+        pg.click(waiting_pos, duration=0.3)
         if check_state(var, state, simple=True) != 0:
             break
         if (datetime.now() - var['timestamp']).seconds > timeout:
@@ -92,8 +86,8 @@ def error_state(var, logger):
 last_minion = 0
 last_card = 0
 def my_turn(last_minion, last_card):
-    pic_cards = pg.screenshot(region=cards)
-    pic_minions = pg.screenshot(region=minions)
+    pic_cards = pg.screenshot('test_pics/cards.jpg', region=cards)
+    pic_minions = pg.screenshot('test_pics/minions.jpg', region=minions)
     
     width, height = pic_cards.size
     flag = 0
@@ -103,17 +97,16 @@ def my_turn(last_minion, last_card):
             if delta(color, green) < epsilon or delta(color, yellow) < epsilon:
                 flag = 1
                 if last_card != x:
-                    pg.click(x+cards[0]-5, y+cards[1], duration=0.3)
+                    pg.click(x+cards[0]+20, y+cards[1], duration=0.3)
                     pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.3)
                 else:
-                    pg.click(x+cards[0]+10, y+cards[1], duration=0.3)
+                    pg.click(x+cards[0]-20, y+cards[1], duration=0.3)
                     pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.3)
                 last_card = x
                 break
         if flag == 1:
             break
 
-    pic_enemy_minions = pg.screenshot(region=enemy_minions)
     width, height = pic_minions.size
     flag = 0
     for x in range(0, width, 5):
@@ -122,19 +115,31 @@ def my_turn(last_minion, last_card):
             if delta(color, green) < epsilon or delta(color, green2) < epsilon:
                 flag = 1
                 if last_minion != x:
-                    pg.click(x+minions[0]+20, y+minions[1]+20, duration=0.3)
+                    pg.click(x+minions[0]+20, y+minions[1]+40, duration=0.3)
                 else:
-                    pg.click(x+minions[0]-20, y+minions[1]+20, duration=0.3)
+                    pg.click(x+minions[0]-20, y+minions[1]+40, duration=0.3)
                 last_minion = x
                 # overcome wall
-                # target_color = pg.pixel(enemy_hero)
-                
-                pg.click(enemy_hero, duration=0.3)
-                return
+                target_color = pg.pixel(enemy_hero[0], enemy_hero[1])
+                if delta(target_color, red) < epsilon+20:
+                    pg.click(enemy_hero, duration=0.3)
+                else:
+                    pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=enemy_minions)
+                    enemy_width, enemy_height = pic_enemy_minions.size
+                    enemy_flag = 0
+                    for i in range (0, enemy_width, 5):
+                        for j in range (0, enemy_height, 5):
+                            enemy_color = pic_enemy_minions.getpixel((i, j))
+                            if delta(enemy_color, red) < epsilon:
+                                enemy_flag = 1
+                                pg.click(i+enemy_minions[0], j+enemy_minions[1]+40, duration=0.3)
+                        if enemy_flag == 1:
+                            break
+                break
         if flag == 1:
-            break
+            return
 
-    pic_hero = pg.screenshot(region=hero)
+    pic_hero = pg.screenshot('test_pics/hero.jpg', region=hero)
     width, height = pic_hero.size
     flag = 0
     for x in range(0, width, 3):
@@ -143,12 +148,11 @@ def my_turn(last_minion, last_card):
             if delta(color, green) < epsilon:
                 flag = 1
                 pg.click(x+hero[0]+10, y+hero[1], duration=0.3)
-                #
                 pg.click(enemy_hero, duration=0.3)
                 break
         if flag == 1:
             break
-    pg.rightClick(duration=0.1)
+    pg.click(waiting_pos, clicks=2, interval=0.2, button='RIGHT', duration=0.2)
 
 def out_game(var):
     cor_start = pg.locateOnScreen(img_start, grayscale=True, confidence=confi)
@@ -158,23 +162,23 @@ def out_game(var):
     if cor_end_turn != None:
         x, y = pg.center(cor_end_turn)
         pg.click(x=x,y=y, duration=0.3)
-        time.sleep(5)
+        pg.sleep(5)
     elif cor_start != None:
         x, y = pg.center(cor_start)
         pg.click(x=x,y=y, duration=0.3)
-        time.sleep(5)
+        pg.sleep(5)
         while pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
-            time.sleep(0.5)
+            pg.sleep(0.5)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                 return
         x, y = pg.center(pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi))
         pg.click(x=x,y=y, duration=0.5)
-        time.sleep(2)
+        pg.sleep(2)
         
     elif cor_traditional_game != None:
         x, y = pg.center(cor_traditional_game)
         pg.click(x=x,y=y, duration=0.3)
-        time.sleep(2)
+        pg.sleep(2)
     elif cor_play != None:
         error_state(var, logger)
         var['timestamp'] = datetime.now()
@@ -184,7 +188,7 @@ def out_game(var):
         logger.info('w: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
-            time.sleep(1)
+            pg.sleep(1)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
     elif pg.locateOnScreen(img_win, grayscale=True, confidence=confi) != None:
@@ -192,7 +196,7 @@ def out_game(var):
         logger.info('win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
-            time.sleep(1)
+            pg.sleep(1)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
 
@@ -259,8 +263,7 @@ if __name__ == '__main__':
     var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
     state = 0
 
-    user32 = ctypes.windll.user32
-    screensize = user32.GetSystemMetrics(0),  user32.GetSystemMetrics(1)
+    screensize = pg.size()
     waiting_pos = (screensize[0]/2, screensize[1]*0.75)
     game_window = default_game_window
     id = checkIfProcessRunning("hearthstone")
@@ -278,7 +281,7 @@ if __name__ == '__main__':
     logger.info('game window: (%i, %i, %i, %i)'%(game_window))
     # regions = (left, top, width, height)
     cards = (game_window[0]+650, game_window[1]+990, 600, 50)
-    minions = (game_window[0]+380, game_window[1]+540, 1050, 30)
+    minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
     enemy_minions = (game_window[0]+390, game_window[1]+335, 1050, 30)
     hero = (game_window[0]+780, game_window[1]+810, 460, 30)
     enemy_hero = (game_window[0]+922, game_window[1]+153)
@@ -294,7 +297,7 @@ if __name__ == '__main__':
             elif state == 1:
                 my_turn(last_minion, last_card)
             elif state == 2:
-                time.sleep(1)
+                pg.sleep(1)
         except (KeyboardInterrupt, pg.FailSafeException):
             break
         except OSError:
