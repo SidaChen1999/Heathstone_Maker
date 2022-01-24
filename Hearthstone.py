@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from typing import Literal
 import pyautogui as pg
 import keyboard
 import psutil
@@ -10,8 +11,16 @@ import win32con
 import win32gui
 import win32process
 import os
+from PyQt5.QtWidgets import QApplication
 from parameters import *
 
+def sleep(time, QT: QApplication=None):
+    if QT is None:
+        pg.sleep(time)
+    else:
+        timer = datetime.now()
+        while (datetime.now() - timer).seconds < time:
+            QT.processEvents()
 def tuple_add(a:tuple, b:tuple):
     return tuple(map(lambda i, j: i + j, a, b))
 def tuple_sub(a:tuple, b:tuple):
@@ -20,45 +29,59 @@ def tuple_abs_sum(a:tuple):
     return sum([abs(number) for number in a])
 def delta(a, b):
     return tuple_abs_sum(tuple_sub(a, b))
+def find_color(pic, step=1, eps=1, *args) -> tuple:
+    width, height = pic.size
+    for x in range(0, width, step):
+        for y in range(0, height, step):
+            color = pic.getpixel((x, y))
+            for arg in args:
+                if delta(color, arg) < eps:
+                    return(x, y)
+    return (None, None)
 
 def check_state(var, last_state, simple=False):
     cor_enemy_turn = pg.locateOnScreen(img_enemy_turn, grayscale=False, confidence=confi)
     cor_my_turn = pg.locateOnScreen(img_my_turn, grayscale=False, confidence=confi)
     cor_my_turn1 = pg.locateOnScreen(img_my_turn1, grayscale=False, confidence=confi)
+    cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
     if cor_enemy_turn != None:
         next_state = 2
     elif cor_my_turn != None:
         next_state = 1
     elif cor_my_turn1 != None:
         next_state = 1
+    elif cor_play != None:
+        next_state = 3
     else:
         next_state = 0
     if simple:
         return next_state
     if last_state == next_state:
         if (datetime.now() - var['timestamp']).seconds > timeout:
-            var['timestamp'] = datetime.now()
-            error_state(var, logger)
-            var['timestamp'] = datetime.now()
+            next_state = 3
     else:
         var['timestamp'] = datetime.now()
     return next_state
 
-def error_state(var, logger: logging.Logger):
+def error_state(var, logger: logging.Logger=None, QT=None):
     var['error'] += 1
-    logger.error('error: %i', var['error'])
+    if logger is not None:
+        logger.error('error: %i', var['error'])
     cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
     if cor_play != None:
         pg.click(cor_play, duration=0.5)
-        pg.sleep(10)
+        print(1)
+        sleep(10, QT)
     else:
         proc = checkIfProcessRunning('hearthstone', kill=True)
-        pg.sleep(2)
+        print(2)
+        sleep(2, QT)
         if proc == None:
             cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
             if cor_battlenet != None:
                 pg.click(cor_battlenet, duration=0.5)
-                pg.sleep(1)
+                print(3)
+                sleep(1, QT)
             else:
                 return
         else:
@@ -67,136 +90,92 @@ def error_state(var, logger: logging.Logger):
                 cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
                 if cor_battlenet != None:
                     pg.click(cor_battlenet, duration=0.5)
-                    pg.sleep(1)
+                    print(4)
+                    sleep(1, QT)
                 else:
                     return
         cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
         if cor_play != None:
             var['timestamp'] = datetime.now()
             pg.click(cor_play, duration=0.5)
-            pg.sleep(10)
+            print(5)
+            sleep(10, QT)
     while pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
-        pg.sleep(2)
-        pg.click(waiting_pos, duration=0.3)
+        print(6)
+        sleep(2, QT)
+        pg.click(waiting_pos, duration=0.2)
         if check_state(var, state, simple=True) != 0:
             break
         if (datetime.now() - var['timestamp']).seconds > timeout:
             return
+    print(7)
 
-last_minion = 0
-last_card = 0
-def my_turn(last_minion, last_card):
+def my_turn():
     pic_cards = pg.screenshot('test_pics/cards.jpg', region=cards)
     pic_minions = pg.screenshot('test_pics/minions.jpg', region=minions)
-    
-    width, height = pic_cards.size
-    flag = 0
-    for x in range(0, width, 2):
-        for y in range(0, height, 2):
-            color = pic_cards.getpixel((x, y))
-            if delta(color, green) < epsilon or delta(color, yellow) < epsilon:
-                flag = 1
-                if last_card != x:
-                    pg.click(x+cards[0]+20, y+cards[1], duration=0.3)
-                    pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.3)
-                else:
-                    pg.click(x+cards[0]-20, y+cards[1], duration=0.3)
-                    pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.3)
-                last_card = x
-                break
-        if flag == 1:
-            break
-
-    width, height = pic_minions.size
-    flag = 0
-    for x in range(0, width, 5):
-        for y in range(0, height, 5):
-            color = pic_minions.getpixel((x, y))
-            if delta(color, green) < epsilon or delta(color, green2) < epsilon:
-                flag = 1
-                if last_minion != x:
-                    pg.click(x+minions[0]+20, y+minions[1]+40, duration=0.3)
-                else:
-                    pg.click(x+minions[0]-20, y+minions[1]+40, duration=0.3)
-                last_minion = x
-                # overcome wall
-                target_color = pg.pixel(enemy_hero[0], enemy_hero[1])
-                if delta(target_color, red) < epsilon+20:
-                    pg.click(enemy_hero, duration=0.3)
-                else:
-                    pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=enemy_minions)
-                    enemy_width, enemy_height = pic_enemy_minions.size
-                    enemy_flag = 0
-                    for i in range (0, enemy_width, 5):
-                        for j in range (0, enemy_height, 5):
-                            enemy_color = pic_enemy_minions.getpixel((i, j))
-                            if delta(enemy_color, red) < epsilon:
-                                enemy_flag = 1
-                                pg.click(i+enemy_minions[0], j+enemy_minions[1]+40, duration=0.3)
-                        if enemy_flag == 1:
-                            break
-                break
-        if flag == 1:
-            return
-
     pic_hero = pg.screenshot('test_pics/hero.jpg', region=hero)
-    width, height = pic_hero.size
-    flag = 0
-    for x in range(0, width, 3):
-        for y in range(0, height, 3):
-            color = pic_hero.getpixel((x, y))
-            if delta(color, green) < epsilon:
-                flag = 1
-                pg.click(x+hero[0]+10, y+hero[1], duration=0.3)
-                pg.click(enemy_hero, duration=0.3)
-                break
-        if flag == 1:
-            break
-    pg.click(waiting_pos, clicks=2, interval=0.2, button='RIGHT', duration=0.2)
+    
+    x_cards, y_cards = find_color(pic_cards, 2, epsilon, green, yellow)
+    if x_cards is not None:
+        pg.click(x_cards+cards[0], y_cards+cards[1]+20, duration=0.2)
+        pg.click(enemy_hero, clicks=2, interval=0.5, duration=0.2)
 
-def out_game(var):
-    cor_start = pg.locateOnScreen(img_start, grayscale=True, confidence=confi)
-    cor_traditional_game = pg.locateOnScreen(img_traditional_game, grayscale=True, confidence=confi)
-    cor_end_turn = pg.locateOnScreen(img_end_turn, grayscale=False, confidence=confi)
-    cor_play = pg.locateOnScreen(img_play, grayscale=True, confidence=confi)
+    x_minions, y_minions = find_color(pic_minions, 5, epsilon, green, green2)
+    if x_minions is not None:
+        pg.click(x_minions+minions[0], y_minions+minions[1]+40, duration=0.2)
+        enemy_hero_color = pg.pixel(enemy_hero[0], enemy_hero[1])
+        if delta(enemy_hero_color, red) < epsilon+40:
+            pg.click(enemy_hero, duration=0.2)
+        else:
+            pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=enemy_minions)
+            x_enemy, y_enemy = find_color(pic_enemy_minions, 5, epsilon, red)
+            if x_enemy is not None:
+                pg.click(x_enemy+enemy_minions[0]+20, y_enemy+enemy_minions[1]+40, duration=0.2)
+            else:
+                pg.click(enemy_hero, duration=0.2)
+
+    if x_minions is None and x_cards is None:
+        x_hero, y_hero = find_color(pic_hero, 3, epsilon, green)
+        if x_hero is not None:
+            pg.click(x_hero+hero[0], y_hero+hero[1]+30, duration=0.2)
+            pg.click(enemy_hero, duration=0.2)
+    pg.click(enemy_hero, clicks=2, interval=0.2, button='RIGHT', duration=0.2)
+
+def out_game(var, QT=None):
+    cor_start = pg.locateCenterOnScreen(img_start, grayscale=True, confidence=confi)
+    cor_traditional_game = pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi)
+    cor_end_turn = pg.locateCenterOnScreen(img_end_turn, grayscale=False, confidence=confi)
     if cor_end_turn != None:
-        x, y = pg.center(cor_end_turn)
-        pg.click(x=x,y=y, duration=0.3)
-        pg.sleep(5)
+        pg.click(cor_end_turn, duration=0.2)
+        sleep(5, QT)
     elif cor_start != None:
-        x, y = pg.center(cor_start)
-        pg.click(x=x,y=y, duration=0.3)
-        pg.sleep(5)
-        while pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
-            pg.sleep(0.5)
+        pg.click(cor_start, duration=0.2)
+        sleep(5, QT)
+        while pg.locateCenterOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
+            sleep(0.5, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                 return
-        x, y = pg.center(pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi))
-        pg.click(x=x,y=y, duration=0.5)
-        pg.sleep(2)
+        pg.click(pg.locateCenterOnScreen(img_confirm, grayscale=True, confidence=confi), duration=0.5)
+        sleep(2, QT)
         
     elif cor_traditional_game != None:
-        x, y = pg.center(cor_traditional_game)
-        pg.click(x=x,y=y, duration=0.3)
-        pg.sleep(2)
-    elif cor_play != None:
-        error_state(var, logger)
-        var['timestamp'] = datetime.now()
+        pg.click(cor_traditional_game, duration=0.2)
+        sleep(2, QT)
 
     elif pg.locateOnScreen(img_loss, grayscale=True, confidence=confi) != None:
         var['loss'] += 1
-        logger.info('w: %i; loss: %i', var['win'], var['loss'])
+        logger.info('loss; win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
-            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
-            pg.sleep(1)
+            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.2)
+            sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
     elif pg.locateOnScreen(img_win, grayscale=True, confidence=confi) != None:
         var['win'] += 1
-        logger.info('win: %i; loss: %i', var['win'], var['loss'])
+        logger.info('win; win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
-            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.3)
-            pg.sleep(1)
+            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.2)
+            sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
 
@@ -251,15 +230,53 @@ def checkIfProcessRunning(processName, kill=False):
             pass
     return None
 
-if __name__ == '__main__':
+def logger_init(filename='log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'):
     FORMAT = '%(asctime)s %(message)s'
-    log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H%M%S")+'.log'
-    logging.basicConfig(filename=log_file_start, format=FORMAT, filemode='w')
+    logging.basicConfig(filename=filename, format=FORMAT, filemode='w')
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG) 
+    logger.setLevel(logging.DEBUG)
     consoleHandler = logging.StreamHandler()
     consoleHandler.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(consoleHandler)
+    return logger
+
+def logger_deconstruct(filename=None):
+    logging.shutdown()
+    if filename is not None:
+        log_file_end = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
+        try:
+            os.rename(filename, log_file_end)
+        except:
+            print('rename log file error')
+    return
+    
+def update_stats(logger: logging.Logger=None):
+    rows = []
+    with open('dist/stats.csv', 'r', newline='') as csvfile:
+        csvreader = csv.reader(csvfile)
+        header = next(csvreader)
+        for row in csvreader:
+            rows.append(row)
+    if var['win']+var['loss'] != 0:
+        logger.info('win: %i; loss: %i; error: %i; win rate: %.4f',
+            var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss']))
+        rows.append([str(var[a]) for a in var])
+        with open('dist/stats.csv', 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(header)
+            csvwriter.writerows(rows)
+    wins, losses = 0, 0
+    for row in rows:
+        wins += int(row[0])
+        losses += int(row[1])
+    if logger is not None:
+        logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
+    return
+
+if __name__ == '__main__':
+    log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
+    logger = logger_init(log_file_start)
+    
     var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
     state = 0
 
@@ -280,10 +297,10 @@ if __name__ == '__main__':
                     break
     logger.info('game window: (%i, %i, %i, %i)'%(game_window))
     # regions = (left, top, width, height)
-    cards = (game_window[0]+650, game_window[1]+990, 600, 50)
+    cards = (game_window[0]+650, game_window[1]+970, 600, 50)
     minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
     enemy_minions = (game_window[0]+390, game_window[1]+335, 1050, 30)
-    hero = (game_window[0]+780, game_window[1]+810, 460, 30)
+    hero = (game_window[0]+780, game_window[1]+800, 460, 30)
     enemy_hero = (game_window[0]+922, game_window[1]+153)
     waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
 
@@ -295,9 +312,12 @@ if __name__ == '__main__':
             if state == 0:
                 out_game(var)
             elif state == 1:
-                my_turn(last_minion, last_card)
+                my_turn()
             elif state == 2:
-                pg.sleep(1)
+                sleep(1)
+            elif state == 3:
+                error_state(var, logger)
+                var['timestamp'] = datetime.now()
         except (KeyboardInterrupt, pg.FailSafeException):
             break
         except OSError:
@@ -313,25 +333,5 @@ if __name__ == '__main__':
                 break
     
     logger.info("script ends")
-    rows = []
-    with open('dist/stats.csv', 'r', newline='') as csvfile:
-        csvreader = csv.reader(csvfile)
-        header = next(csvreader)
-        for row in csvreader:
-            rows.append(row)
-    if var['win']+var['loss'] != 0:
-        logger.info('win: %i; loss: %i; error: %i; win rate: %.4f',
-            var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss']))
-        rows.append([str(var[a]) for a in var])
-        with open('dist/stats.csv', 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(header)
-            csvwriter.writerows(rows)
-    wins, losses = 0, 0
-    for row in rows:
-        wins += int(row[0])
-        losses += int(row[1])
-    logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
-    logging.shutdown()
-    log_file_end = 'log/'+datetime.now().strftime("%Y-%m-%d,%H%M%S")+'.log'
-    os.rename(log_file_start, log_file_end)
+    update_stats(logger)
+    logger_deconstruct(log_file_start)

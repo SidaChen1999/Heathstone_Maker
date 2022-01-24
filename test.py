@@ -1,13 +1,11 @@
 import pyautogui as pg
-import time
-import psutil
 from datetime import datetime
 import ctypes
 import win32con
 import win32gui
 import win32process
 
-from Hearthstone import delta, check_state, checkIfProcessRunning
+from Hearthstone import delta, check_state, find_color
 from parameters import *
 
 var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
@@ -105,13 +103,27 @@ def my_turn(last_minion, last_card):
             break
     pg.rightClick(duration=0.1)
 
+# pg.sleep(1)
+# my_turn(last_minion, last_card)
+from lib.python_hslog.hslog.parser import LogParser
+from lib.python_hslog.tests.test_export import LoggingExporter
+from lib.python_hslog.tests.test_parser import TestLogParser
+from lib.python_hslog.tests import data
+from io import StringIO
+# tester = TestLogParser()
+# parser = LogParser()
+# parser.read(StringIO(data.EMPTY_GAME))
+# parser.flush()
+# packet_tree = parser.games[0]
+# exporter = LoggingExporter(packet_tree)
+# print(exporter)
+# cor = pg.locate(img_battlenet, pg.screenshot(), grayscale=True, confidence=confi)
+# print(cor)
 pg.sleep(1)
-my_turn(last_minion, last_card)
+pic = pg.screenshot('test_pics/cards.jpg', region=cards)
+color = find_color(pic, 2, epsilon, green, yellow)
+print(color)
 
-
-print(enemy_hero)
-target_color = pg.pixel(enemy_hero[0], enemy_hero[1])
-print(target_color)
 print('ends')
 
 # pg.press('space', presses=1000, interval=0.5)
