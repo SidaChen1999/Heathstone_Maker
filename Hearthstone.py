@@ -2,7 +2,6 @@
 from typing import Literal
 import pyautogui as pg
 import keyboard
-import psutil
 from datetime import datetime
 import csv
 import logging
@@ -11,6 +10,8 @@ import win32con
 import win32gui
 import win32process
 import os
+import signal
+import subprocess
 from PyQt5.QtWidgets import QApplication
 from parameters import *
 
@@ -29,21 +30,22 @@ def tuple_abs_sum(a:tuple):
     return sum([abs(number) for number in a])
 def delta(a, b):
     return tuple_abs_sum(tuple_sub(a, b))
-def find_color(pic, step=1, eps=1, *args) -> tuple:
+def find_color(pic, step=1, eps=1, *target_colors) -> tuple:
     width, height = pic.size
     for x in range(0, width, step):
         for y in range(0, height, step):
             color = pic.getpixel((x, y))
-            for arg in args:
-                if delta(color, arg) < eps:
+            for target_color in target_colors:
+                if delta(color, target_color) < eps:
                     return(x, y)
     return (None, None)
 
 def check_state(var, last_state, simple=False):
-    cor_enemy_turn = pg.locateOnScreen(img_enemy_turn, grayscale=False, confidence=confi)
-    cor_my_turn = pg.locateOnScreen(img_my_turn, grayscale=False, confidence=confi)
-    cor_my_turn1 = pg.locateOnScreen(img_my_turn1, grayscale=False, confidence=confi)
-    cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
+    screenshotIm = pg.screenshot()
+    cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
+    cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
+    cor_my_turn1 = pg.locate(img_my_turn1, screenshotIm, grayscale=False, confidence=confi)
+    cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
     if cor_enemy_turn != None:
         next_state = 2
     elif cor_my_turn != None:
@@ -73,7 +75,7 @@ def error_state(var, logger: logging.Logger=None, QT=None):
         print(1)
         sleep(10, QT)
     else:
-        proc = checkIfProcessRunning('hearthstone', kill=True)
+        proc = checkIfProcessRunning('Hearthstone.exe', kill=True)
         print(2)
         sleep(2, QT)
         if proc == None:
@@ -142,16 +144,17 @@ def my_turn():
     pg.click(enemy_hero, clicks=2, interval=0.2, button='RIGHT', duration=0.2)
 
 def out_game(var, QT=None):
-    cor_start = pg.locateCenterOnScreen(img_start, grayscale=True, confidence=confi)
-    cor_traditional_game = pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi)
-    cor_end_turn = pg.locateCenterOnScreen(img_end_turn, grayscale=False, confidence=confi)
+    screenshotIm = pg.screenshot()
+    cor_start = pg.locate(img_start, screenshotIm, grayscale=True, confidence=confi)
+    cor_traditional_game = pg.locate(img_traditional_game, screenshotIm, grayscale=True, confidence=confi)
+    cor_end_turn = pg.locate(img_end_turn, screenshotIm, grayscale=False, confidence=confi)
     if cor_end_turn != None:
-        pg.click(cor_end_turn, duration=0.2)
+        pg.click(pg.center(cor_end_turn), duration=0.2)
         sleep(5, QT)
     elif cor_start != None:
-        pg.click(cor_start, duration=0.2)
+        pg.click(pg.center(cor_start), duration=0.2)
         sleep(5, QT)
-        while pg.locateCenterOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
+        while pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
             sleep(0.5, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                 return
@@ -159,22 +162,22 @@ def out_game(var, QT=None):
         sleep(2, QT)
         
     elif cor_traditional_game != None:
-        pg.click(cor_traditional_game, duration=0.2)
+        pg.click(pg.center(cor_traditional_game), duration=0.2)
         sleep(2, QT)
 
-    elif pg.locateOnScreen(img_loss, grayscale=True, confidence=confi) != None:
+    elif pg.locate(img_loss, screenshotIm, grayscale=True, confidence=confi) != None:
         var['loss'] += 1
         logger.info('loss; win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
-            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.2)
+            pg.click(waiting_pos, duration=0.2)
             sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
-    elif pg.locateOnScreen(img_win, grayscale=True, confidence=confi) != None:
+    elif pg.locate(img_win, screenshotIm, grayscale=True, confidence=confi) != None:
         var['win'] += 1
         logger.info('win; win: %i; loss: %i', var['win'], var['loss'])
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
-            pg.click(x=waiting_pos[0], y=waiting_pos[1], duration=0.2)
+            pg.click(waiting_pos, duration=0.2)
             sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
@@ -218,29 +221,37 @@ def get_hwnds_for_pid (pid):
     win32gui.EnumWindows(callback, hwnds)
     return hwnds
 
-def checkIfProcessRunning(processName, kill=False):
+def checkIfProcessRunning(processName:str, kill=False):
     '''Return the process id if it is running or return None'''
-    for proc in psutil.process_iter():
-        try:
-            if processName.lower() in proc.name().lower():
+    call = 'TASKLIST', '/FI', 'imagename eq %s' % processName
+    # use buildin check_output right away
+    output = subprocess.check_output(call).decode()
+    # check in last line for process name
+    last_line = output.strip().split('\r\n')[-1]
+    if last_line.lower().startswith(processName.lower()):
+        temp = last_line.split(' ')
+        for i in range(1, len(temp)):
+            if temp[i] != '':
+                pid = int(temp[i])
                 if kill:
-                    proc.kill()
-                return proc.pid
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-    return None
+                    os.kill(pid, signal.SIGTERM)
+                return pid
+    else: 
+        return None
 
 def logger_init(filename='log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'):
     FORMAT = '%(asctime)s %(message)s'
-    logging.basicConfig(filename=filename, format=FORMAT, filemode='w')
-    logger = logging.getLogger()
+    logging.basicConfig(filename=filename, format=FORMAT, filemode='w', force=True)
+    logger = logging.getLogger('Hearthstone.exe')
     logger.setLevel(logging.DEBUG)
     consoleHandler = logging.StreamHandler()
     consoleHandler.setFormatter(logging.Formatter(FORMAT))
     logger.addHandler(consoleHandler)
     return logger
 
-def logger_deconstruct(filename=None):
+def logger_deconstruct(logger, filename=None):
+    del logging.Logger.manager.loggerDict['Hearthstone.exe']
+    del logger
     logging.shutdown()
     if filename is not None:
         log_file_end = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
@@ -283,12 +294,12 @@ if __name__ == '__main__':
     screensize = pg.size()
     waiting_pos = (screensize[0]/2, screensize[1]*0.75)
     game_window = default_game_window
-    id = checkIfProcessRunning("hearthstone")
-    if id is None:
+    pid = checkIfProcessRunning("Hearthstone.exe")
+    if pid is None:
         error_state(var, logger)
-        id = checkIfProcessRunning("hearthstone")
-    if id is not None:
-        hwnds = get_hwnds_for_pid(id)
+        pid = checkIfProcessRunning("Hearthstone.exe")
+    if pid is not None:
+        hwnds = get_hwnds_for_pid(pid)
         wins = getWindowSizes()
         if len(hwnds) != 0:
             for win in wins:
@@ -299,7 +310,7 @@ if __name__ == '__main__':
     # regions = (left, top, width, height)
     cards = (game_window[0]+650, game_window[1]+970, 600, 50)
     minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
-    enemy_minions = (game_window[0]+390, game_window[1]+335, 1050, 30)
+    enemy_minions = (game_window[0]+420, game_window[1]+345, 1020, 30)
     hero = (game_window[0]+780, game_window[1]+800, 460, 30)
     enemy_hero = (game_window[0]+922, game_window[1]+153)
     waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
@@ -334,4 +345,4 @@ if __name__ == '__main__':
     
     logger.info("script ends")
     update_stats(logger)
-    logger_deconstruct(log_file_start)
+    logger_deconstruct(logger, log_file_start)

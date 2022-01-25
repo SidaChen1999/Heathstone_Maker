@@ -2,9 +2,7 @@ import sys
 import traceback
 from PyQt5.QtWidgets import QApplication, QLineEdit, QMenu, QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import QRect, pyqtSlot
-import numpy as np
-from functools import partial
+from PyQt5.QtCore import QRect, pyqtSlot, Qt
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
 from Hearthstone import check_state, checkIfProcessRunning, error_state,\
@@ -14,7 +12,7 @@ from parameters import *
 
 version = 'v0.05'
 buttom_size = (200, 60)
-window_pos = QRect(1620, 30, 300, 1000)
+window_pos = QRect(0, 30, 400, 1000)
 font = QFont('Arial', 16)
 
 class App(QWidget):
@@ -25,9 +23,15 @@ class App(QWidget):
         self.state  = 0 # 0 = out of game; 1 = my turn; 2 = enemy turn; 3 = error
         self.last_minion = 0
         self.last_card = 0
-        self.logger_text = ''
+        self.logger_text = 'Logs:\n'
+        self.stats_text = 'Stats:\n'
+        self.logger = None
         
-        self.output = QLabel('Hearthstone Maker ' + version, self)
+        self.logger_label = QLabel(self.logger_text, self)
+        self.logger_label.setGeometry(0, 500, window_pos.width(), 500)
+        self.stats_label = QLabel(self.stats_text, self)
+        self.stats_label.setGeometry(0, 900, window_pos.width(), 100)
+        self.Header = QLabel('Hearthstone Maker ' + version, self)
         self.start = QPushButton('Start Script', self)
         self.start.clicked.connect(self.on_click_start)
         self.start.setCheckable(True)
@@ -46,23 +50,24 @@ class App(QWidget):
     def initUI(self):
         self.setWindowTitle("Heathstone Maker")
         self.setGeometry(window_pos)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
         
     @pyqtSlot()
     def on_click_start(self):
         if self.started:
             return
-        self.started = True
         self.start.setChecked(True)
         self.stop.setChecked(False)
-        self.log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
-        self.logger = logger_init(self.log_file_start)
+        self.started = True
+        self.log_file_name = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
+        self.logger = logger_init(self.log_file_name)
         screensize = pg.size()
         waiting_pos = (screensize[0]/2, screensize[1]*0.75)
         game_window = default_game_window
-        id = checkIfProcessRunning("hearthstone")
+        id = checkIfProcessRunning("Hearthstone.exe")
         if id is None:
             error_state(self.var, self.logger)
-            id = checkIfProcessRunning("hearthstone")
+            id = checkIfProcessRunning("Hearthstone.exe")
         if id is not None:
             hwnds = get_hwnds_for_pid(id)
             wins = getWindowSizes()
@@ -81,13 +86,13 @@ class App(QWidget):
         waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
         self.logger.info("script starts")
         state = 0
+        self.var['timestamp'] = datetime.now()
         while self.started:
             try:
-                # state = check_state(self.var, state)
-                # self.logger.info('state: %i', state)
-                print(datetime.now())
-                sleep(3, QApplication)
+                state = check_state(self.var, state)
+                self.logger.info('state: %i', state)
                 # out_game(self.var, QApplication)
+                self.update_log_UI()
                 QApplication.processEvents()
             except (KeyboardInterrupt, pg.FailSafeException):
                 break
@@ -110,11 +115,26 @@ class App(QWidget):
             return
         self.started = False
         self.logger.info("script ends")
+        self.update_log_UI()
         self.start.setChecked(False)
         self.stop.setChecked(True)
-        logger_deconstruct(self.log_file_start)
+        logger_deconstruct(self.logger, self.log_file_name)
+        self.logger = None
         return
     
+    def update_log_UI(self):
+        with open(self.log_file_name, 'r', encoding='UTF-8') as log_file:
+            lines = log_file.readlines()
+            self.logger_text = 'Logs:\n' + ''.join(lines[-5:])
+            self.logger_label.setText(self.logger_text)
+            if lines[-1][24:].startswith(('loss','win')):
+                self.update_stats_UI()
+
+    def update_stats_UI(self):
+        self.stats_text = 'win: %i; loss: %i; error: %i; win rate: %.4f',\
+            self.var['win'], self.var['loss'], self.var['error'], self.var['win']/(self.var['win']+self.var['loss'])
+        self.stats_label.setText(self.stats_label)
+        
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

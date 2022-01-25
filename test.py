@@ -1,3 +1,5 @@
+import os
+import signal
 import pyautogui as pg
 from datetime import datetime
 import ctypes
@@ -5,7 +7,7 @@ import win32con
 import win32gui
 import win32process
 
-from Hearthstone import delta, check_state, find_color
+from Hearthstone import checkIfProcessRunning, delta, check_state, find_color
 from parameters import *
 
 var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
@@ -117,13 +119,6 @@ from io import StringIO
 # packet_tree = parser.games[0]
 # exporter = LoggingExporter(packet_tree)
 # print(exporter)
-# cor = pg.locate(img_battlenet, pg.screenshot(), grayscale=True, confidence=confi)
-# print(cor)
-pg.sleep(1)
-pic = pg.screenshot('test_pics/cards.jpg', region=cards)
-color = find_color(pic, 2, epsilon, green, yellow)
-print(color)
-
 print('ends')
 
 # pg.press('space', presses=1000, interval=0.5)
