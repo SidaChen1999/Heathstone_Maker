@@ -5,9 +5,8 @@ from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QRect, pyqtSlot, Qt
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
-from Hearthstone import check_state, checkIfProcessRunning, error_state,\
-    get_hwnds_for_pid, getWindowSizes, my_turn, out_game, logger_init, \
-    logger_deconstruct, sleep
+from Hearthstone import GetWindowRectFromName, check_state, error_state,\
+    my_turn, out_game, logger_init, logger_deconstruct, setWindow, sleep
 from parameters import *
 
 version = 'v0.05'
@@ -63,20 +62,14 @@ class App(QWidget):
         self.logger = logger_init(self.log_file_name)
         screensize = pg.size()
         waiting_pos = (screensize[0]/2, screensize[1]*0.75)
-        game_window = default_game_window
-        id = checkIfProcessRunning("Hearthstone.exe")
-        if id is None:
+        rect = GetWindowRectFromName('炉石传说')
+        if rect is None:
             error_state(self.var, self.logger)
-            id = checkIfProcessRunning("Hearthstone.exe")
-        if id is not None:
-            hwnds = get_hwnds_for_pid(id)
-            wins = getWindowSizes()
-            if len(hwnds) != 0:
-                for win in wins:
-                    if hwnds[0] == win[0]:
-                        game_window = win[1]
-                        break
-        self.logger.info('game window: (%i, %i, %i, %i)'%(game_window))
+            rect = GetWindowRectFromName('炉石传说')
+        elif rect != game_window:
+            setWindow('炉石传说', game_window)
+            rect = GetWindowRectFromName('炉石传说')
+        self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
         # regions = (left, top, width, height)
         cards = (game_window[0]+650, game_window[1]+970, 600, 50)
         minions = (game_window[0]+380, game_window[1]+530, 1050, 30)

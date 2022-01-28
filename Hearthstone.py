@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import ctypes
 from typing import Literal
 import pyautogui as pg
 import keyboard
@@ -40,7 +41,7 @@ def find_color(pic, step=1, eps=1, *target_colors) -> tuple:
                     return(x, y)
     return (None, None)
 
-def check_state(var, last_state, simple=False):
+def check_state(var, last_state=0, simple=False):
     screenshotIm = pg.screenshot()
     cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
     cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
@@ -67,22 +68,21 @@ def check_state(var, last_state, simple=False):
 
 def error_state(var, logger: logging.Logger=None, QT=None):
     var['error'] += 1
-    if logger is not None:
+    if logger is None:
+        print('error: %i', var['error'])
+    else:
         logger.error('error: %i', var['error'])
     cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
     if cor_play != None:
-        pg.click(cor_play, duration=0.5)
-        print(1)
+        pg.click(cor_play, duration=0.2)
         sleep(10, QT)
     else:
-        proc = checkIfProcessRunning('Hearthstone.exe', kill=True)
-        print(2)
+        proc = checkIfProcessRunning(pid_name, kill=True)
         sleep(2, QT)
         if proc == None:
             cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
             if cor_battlenet != None:
-                pg.click(cor_battlenet, duration=0.5)
-                print(3)
+                pg.click(cor_battlenet, duration=0.2)
                 sleep(1, QT)
             else:
                 return
@@ -91,26 +91,31 @@ def error_state(var, logger: logging.Logger=None, QT=None):
             if cor_play == None:
                 cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
                 if cor_battlenet != None:
-                    pg.click(cor_battlenet, duration=0.5)
-                    print(4)
+                    pg.click(cor_battlenet, duration=0.2)
                     sleep(1, QT)
                 else:
                     return
         cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
         if cor_play != None:
             var['timestamp'] = datetime.now()
-            pg.click(cor_play, duration=0.5)
-            print(5)
-            sleep(10, QT)
+            pg.click(cor_play, duration=0.2)
+            sleep(20, QT)
+    rect = GetWindowRectFromName(hwnd_name)
+    if rect is None:
+        return
+    else:
+        if rect != game_window:
+            setWindow(hwnd_name, game_window)
+        waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
+        print(rect)
+        print(waiting_pos)
     while pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
-        print(6)
         sleep(2, QT)
         pg.click(waiting_pos, duration=0.2)
-        if check_state(var, state, simple=True) != 0:
+        if check_state(var, simple=True) != 0:
             break
         if (datetime.now() - var['timestamp']).seconds > timeout:
-            return
-    print(7)
+            break
 
 def my_turn():
     pic_cards = pg.screenshot('test_pics/cards.jpg', region=cards)
@@ -182,44 +187,31 @@ def out_game(var, QT=None):
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
 
-def isRealWindow(hWnd) -> bool:
-    '''Return True iff given window is a real Windows application window.'''
-    if not win32gui.IsWindowVisible(hWnd):
-        return False
-    if win32gui.GetParent(hWnd) != 0:
-        return False
-    hasNoOwner = win32gui.GetWindow(hWnd, win32con.GW_OWNER) == 0
-    lExStyle = win32gui.GetWindowLong(hWnd, win32con.GWL_EXSTYLE)
-    if (((lExStyle & win32con.WS_EX_TOOLWINDOW) == 0 and hasNoOwner)
-      or ((lExStyle & win32con.WS_EX_APPWINDOW != 0) and not hasNoOwner)):
-        if win32gui.GetWindowText(hWnd):
-            return True
-    return False
+def GetWindowRectFromName(name:str)-> tuple:
+    hwnd = win32gui.FindWindow(None, name)
+    if hwnd == 0:
+        return None
+    rect = win32gui.GetWindowRect(hwnd)
+    return rect
 
-def getWindowSizes() -> list:
-    '''
-    Return a list of tuples (handler, rect) for each real window.
-    Rect is a tuple of (left, top, right, button)
-    '''
-    def callback(hWnd, windows):
-        if not isRealWindow(hWnd):
-            return
-        rect = win32gui.GetWindowRect(hWnd)
-        windows.append((hWnd, rect))
-    windows = []
-    win32gui.EnumWindows(callback, windows)
-    return windows
-
-def get_hwnds_for_pid (pid):
-    def callback (hwnd, hwnds):
-        if win32gui.IsWindowVisible (hwnd) and win32gui.IsWindowEnabled (hwnd):
-            _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
-            if found_pid == pid:
-                hwnds.append (hwnd)
+def setWindow(name, rect) -> bool:
+    old_rect = GetWindowRectFromName(name)
+    if old_rect == rect:
         return True
-    hwnds = []
-    win32gui.EnumWindows(callback, hwnds)
-    return hwnds
+    if old_rect == None:
+        return False
+    hwnd = win32gui.FindWindow(None, name)
+    placement = win32gui.GetWindowPlacement(hwnd)
+    new_placement = list(placement)
+    new_placement[0] = -1
+    new_placement[1] = win32con.SW_SHOWNORMAL
+    new_placement[4] = game_window
+    win32gui.SetWindowPlacement(hwnd, new_placement)
+    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, win32con.SWP_NOMOVE|win32con.SWP_NOSIZE)
+    new_rect = GetWindowRectFromName(name)
+    if new_rect == rect:
+        return True
+    return False
 
 def checkIfProcessRunning(processName:str, kill=False):
     '''Return the process id if it is running or return None'''
@@ -261,7 +253,7 @@ def logger_deconstruct(logger, filename=None):
             print('rename log file error')
     return
     
-def update_stats(logger: logging.Logger=None):
+def update_stats(var, logger: logging.Logger=None):
     rows = []
     with open('dist/stats.csv', 'r', newline='') as csvfile:
         csvreader = csv.reader(csvfile)
@@ -269,8 +261,12 @@ def update_stats(logger: logging.Logger=None):
         for row in csvreader:
             rows.append(row)
     if var['win']+var['loss'] != 0:
-        logger.info('win: %i; loss: %i; error: %i; win rate: %.4f',
-            var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss']))
+        if logger is None:
+            print('win: %i; loss: %i; error: %i; win rate: %.4f',
+                var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss']))
+        else:
+            logger.info('win: %i; loss: %i; error: %i; win rate: %.4f',
+                var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss']))
         rows.append([str(var[a]) for a in var])
         with open('dist/stats.csv', 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
@@ -280,7 +276,9 @@ def update_stats(logger: logging.Logger=None):
     for row in rows:
         wins += int(row[0])
         losses += int(row[1])
-    if logger is not None:
+    if logger is None:
+        print('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
+    else:
         logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
     return
 
@@ -291,28 +289,24 @@ if __name__ == '__main__':
     var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
     state = 0
 
-    screensize = pg.size()
-    waiting_pos = (screensize[0]/2, screensize[1]*0.75)
-    game_window = default_game_window
-    pid = checkIfProcessRunning("Hearthstone.exe")
-    if pid is None:
+    # screensize = pg.size()
+    # waiting_pos = (screensize[0]/2, screensize[1]*0.75)
+    rect = GetWindowRectFromName(hwnd_name)
+    if rect is None:
         error_state(var, logger)
-        pid = checkIfProcessRunning("Hearthstone.exe")
-    if pid is not None:
-        hwnds = get_hwnds_for_pid(pid)
-        wins = getWindowSizes()
-        if len(hwnds) != 0:
-            for win in wins:
-                if hwnds[0] == win[0]:
-                    game_window = win[1]
-                    break
-    logger.info('game window: (%i, %i, %i, %i)'%(game_window))
+        rect = GetWindowRectFromName(hwnd_name)
+    elif rect != game_window:
+        setWindow(hwnd_name, game_window)
+        rect = GetWindowRectFromName(hwnd_name)
+    if rect is not None:
+        logger.info('game window: (%i, %i, %i, %i)'%(rect))
+    game_window = rect
     # regions = (left, top, width, height)
     cards = (game_window[0]+650, game_window[1]+970, 600, 50)
     minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
     enemy_minions = (game_window[0]+420, game_window[1]+345, 1020, 30)
     hero = (game_window[0]+780, game_window[1]+800, 460, 30)
-    enemy_hero = (game_window[0]+922, game_window[1]+153)
+    enemy_hero = (game_window[0]+929, game_window[1]+127)
     waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
 
     logger.info("script starts")
@@ -344,5 +338,5 @@ if __name__ == '__main__':
                 break
     
     logger.info("script ends")
-    update_stats(logger)
+    update_stats(var, logger)
     logger_deconstruct(logger, log_file_start)
