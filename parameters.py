@@ -1,3 +1,4 @@
+import pyautogui as pg
 img_start = 'pics/start.jpg'
 img_loss = 'pics/loss.jpg'
 img_win = 'pics/win.jpg'
@@ -16,18 +17,17 @@ hwnd_name = '炉石传说'
 pid_name = 'Hearthstone.exe'
 
 green = (213, 255, 139)
-yellow = (255, 255, 12)
+yellow = (255, 255, 70)
 green2 = (208, 233, 97)
 red = (255, 255, 126)
 confi = 0.8
 timeout = 120 # seconds
 epsilon = 15
-
-game_window = (0, 0, 1936, 1118)
-
+screensize = (int(pg.size()[0]/2), int(pg.size()[1]/2))
+game_window = (screensize[0]-960-8, screensize[1]-540, screensize[0]+960+8, screensize[1]+540+38)
 priority = {'enemy_hero': 1, 'enemy_minions': 2, 'minions': 3, 'hero': 4}
 
-class parameters():
+class param():
     def __init__(self):
         self.img_start = 'pics/start.jpg'
         self.img_loss = 'pics/loss.jpg'

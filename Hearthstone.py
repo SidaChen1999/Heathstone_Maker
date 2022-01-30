@@ -47,12 +47,12 @@ def check_state(var, last_state=0, simple=False):
     cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
     cor_my_turn1 = pg.locate(img_my_turn1, screenshotIm, grayscale=False, confidence=confi)
     cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
-    if cor_enemy_turn != None:
-        next_state = 2
-    elif cor_my_turn != None:
+    if cor_my_turn != None:
         next_state = 1
     elif cor_my_turn1 != None:
         next_state = 1
+    elif cor_enemy_turn != None:
+        next_state = 2
     elif cor_play != None:
         next_state = 3
     else:
@@ -78,7 +78,7 @@ def error_state(var, logger: logging.Logger=None, QT=None):
         sleep(10, QT)
     else:
         proc = checkIfProcessRunning(pid_name, kill=True)
-        sleep(2, QT)
+        sleep(1, QT)
         if proc == None:
             cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
             if cor_battlenet != None:
@@ -99,18 +99,16 @@ def error_state(var, logger: logging.Logger=None, QT=None):
         if cor_play != None:
             var['timestamp'] = datetime.now()
             pg.click(cor_play, duration=0.2)
-            sleep(20, QT)
-    rect = GetWindowRectFromName(hwnd_name)
-    if rect is None:
-        return
-    else:
+            sleep(10, QT)
+    while GetWindowRectFromName(hwnd_name) is None:
+        sleep(1, QT)
+    while pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
+        sleep(1, QT)
+        rect = GetWindowRectFromName(hwnd_name)
         if rect != game_window:
             setWindow(hwnd_name, game_window)
-        waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
-        print(rect)
-        print(waiting_pos)
-    while pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
-        sleep(2, QT)
+            rect = GetWindowRectFromName(hwnd_name)
+        waiting_pos = ((rect[0]+rect[2])/2, rect[1]+870)
         pg.click(waiting_pos, duration=0.2)
         if check_state(var, simple=True) != 0:
             break
@@ -131,7 +129,7 @@ def my_turn():
     if x_minions is not None:
         pg.click(x_minions+minions[0], y_minions+minions[1]+40, duration=0.2)
         enemy_hero_color = pg.pixel(enemy_hero[0], enemy_hero[1])
-        if delta(enemy_hero_color, red) < epsilon+40:
+        if delta(enemy_hero_color, red) < epsilon+50:
             pg.click(enemy_hero, duration=0.2)
         else:
             pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=enemy_minions)
@@ -289,8 +287,6 @@ if __name__ == '__main__':
     var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
     state = 0
 
-    # screensize = pg.size()
-    # waiting_pos = (screensize[0]/2, screensize[1]*0.75)
     rect = GetWindowRectFromName(hwnd_name)
     if rect is None:
         error_state(var, logger)
@@ -300,13 +296,12 @@ if __name__ == '__main__':
         rect = GetWindowRectFromName(hwnd_name)
     if rect is not None:
         logger.info('game window: (%i, %i, %i, %i)'%(rect))
-    game_window = rect
     # regions = (left, top, width, height)
-    cards = (game_window[0]+650, game_window[1]+970, 600, 50)
+    cards = (game_window[0]+650, game_window[1]+980, 600, 40)
     minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
     enemy_minions = (game_window[0]+420, game_window[1]+345, 1020, 30)
     hero = (game_window[0]+780, game_window[1]+800, 460, 30)
-    enemy_hero = (game_window[0]+929, game_window[1]+127)
+    enemy_hero = (game_window[0]+933, game_window[1]+143)
     waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
 
     logger.info("script starts")

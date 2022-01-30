@@ -58,18 +58,23 @@ class App(QWidget):
         self.start.setChecked(True)
         self.stop.setChecked(False)
         self.started = True
+
         self.log_file_name = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
         self.logger = logger_init(self.log_file_name)
-        screensize = pg.size()
-        waiting_pos = (screensize[0]/2, screensize[1]*0.75)
-        rect = GetWindowRectFromName('炉石传说')
+        self.var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
+        self.state = 0
+
+        rect = GetWindowRectFromName(hwnd_name)
         if rect is None:
             error_state(self.var, self.logger)
-            rect = GetWindowRectFromName('炉石传说')
+            rect = GetWindowRectFromName(hwnd_name)
         elif rect != game_window:
-            setWindow('炉石传说', game_window)
-            rect = GetWindowRectFromName('炉石传说')
-        self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
+            setWindow(hwnd_name, game_window)
+            rect = GetWindowRectFromName(hwnd_name)
+        if rect is not None:
+            self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
+            # if rect[0] == 0:
+            #     game_window = rect
         # regions = (left, top, width, height)
         cards = (game_window[0]+650, game_window[1]+970, 600, 50)
         minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
