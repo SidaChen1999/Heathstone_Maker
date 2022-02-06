@@ -83,7 +83,6 @@ class App(QWidget):
                 self.update_log_UI()
                 if state == 0:
                     out_game(self.var, self.param, self.logger, QApplication)
-                    self.update_log_UI()
                 elif state == 1:
                     my_turn(self.param)
                 elif state == 2:
@@ -107,7 +106,6 @@ class App(QWidget):
                     self.stop.click()
                     break
         
-        self.logger.info("script ends")
         update_stats(self.var, self.logger)
         self.update_log_UI()
         logger_deconstruct(self.logger, self.log_file_name)
@@ -118,6 +116,8 @@ class App(QWidget):
         if not self.started:
             return
         self.started = False
+        self.logger.info("script ends")
+        self.update_log_UI()
         self.start.setChecked(False)
         self.stop.setChecked(True)
         return

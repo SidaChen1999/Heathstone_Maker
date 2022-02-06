@@ -6,56 +6,84 @@ import ctypes
 import win32con
 import win32gui
 import win32process
+import sys
+from PyQt5.QtWidgets import QApplication, QLineEdit, QMenu, QWidget, QPushButton, QLabel
+from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtCore import QRect, pyqtSlot, Qt
 
 from Hearthstone import GetWindowRectFromName, checkIfProcessRunning, \
-    delta, check_state, find_color, setWindow
+    delta, check_state, find_color, setWindow, sleep
 from parameters import *
 
-var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
+# var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
 
-cards = (game_window[0]+650, game_window[1]+990, 600, 50)
-minions = (game_window[0]+380, game_window[1]+540, 1050, 30)
-enemy_minions = (game_window[0]+390, game_window[1]+335, 1050, 30)
-hero = (game_window[0]+780, game_window[1]+810, 460, 30)
-enemy_hero = (game_window[0]+922, game_window[1]+153)
-waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
+version = 'v0.05'
+window_pos = QRect(0, 30, 400, 1000)
+buttom_size = (200, 60)
+class App(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.started = False
+        self.var = {'win': 1, 'loss': 2, 'error': 3, 'timestamp': datetime.now()}
+        self.Header = QLabel('Hearthstone Maker ' + version, self)
+        self.start = QPushButton('Start Script', self)
+        self.start.clicked.connect(self.on_click_start)
+        self.start.setCheckable(True)
+        self.start.setGeometry(
+            int((window_pos.width()-buttom_size[0])/2), 300, 
+            buttom_size[0], buttom_size[1])
+        self.stop = QPushButton('Stop Script', self)
+        self.stop.clicked.connect(self.on_click_stop)
+        self.stop.setCheckable(True)
+        self.stop.setGeometry(
+            int((window_pos.width()-buttom_size[0])/2), 400, 
+            buttom_size[0], buttom_size[1])
+        self.initUI()
 
+    def initUI(self):
+        self.setWindowTitle("Heathstone Maker")
+        self.setGeometry(window_pos)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+    
+    @pyqtSlot()
+    def on_click_start(self):
+        if self.started:
+            return
+        self.started = True
+        while self.started:
+            self.stats_text = 'win: %i; loss: %i; error: %i; win rate: %.4f' %\
+                (self.var['win'], self.var['loss'], self.var['error'], self.var['win']/(self.var['win']+self.var['loss']))
+            print('error: %i' % self.var['error'])
+            print(self.stats_text)
+            sleep(5, QApplication)
+        
+    @pyqtSlot()
+    def on_click_stop(self):
+        if not self.started:
+            return
+        self.started = False
 
-# pg.sleep(1)
-print(datetime.now())
-hwnd = win32gui.FindWindow(None, '炉石传说')
-print(hwnd)
-print(datetime.now())
-# hwnd = win32gui.FindWindow(None, 'Battle.net')
-if hwnd != 0:
-    placement = win32gui.GetWindowPlacement(hwnd)
-    if placement[1] == win32con.SW_SHOWNORMAL:
-        print('normal')
-    elif placement[1] == win32con.SW_SHOWMAXIMIZED:
-        print('maximized')
-    elif placement[1] == win32con.SW_SHOWMINIMIZED:
-        print('minimized')
-    else:
-        print('abnormal')
-    print(placement)
+name = hwnd_name
+rect = game_window
+old_rect = GetWindowRectFromName(name)
 
-x, y, cx, cy = game_window
-print(game_window)
-
-# SetWindowPos(hwnd, -1, x, y, cx, cy, SWP_NOMOVE|SWP_NOSIZE)
+hwnd = win32gui.FindWindow(None, name)
+placement = win32gui.GetWindowPlacement(hwnd)
+print('placement: ', placement)
 new_placement = list(placement)
-new_placement[0] = -2
+new_placement[0] = -1
 new_placement[1] = win32con.SW_SHOWNORMAL
 new_placement[4] = game_window
-# win32gui.SetWindowPos(hwnd, -1, x, y, cx, cy, win32con.SWP_NOMOVE|win32con.SWP_NOSIZE)
-# win32gui.SetWindowPlacement(hwnd, new_placement)
-setWindow(hwnd_name, game_window)
-# win32gui.MoveWindow(hwnd, x, y, cx, cy, True)
+win32gui.SetWindowPlacement(hwnd, new_placement)
+win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
+    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, 
+    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
+    win32con.SWP_SHOWWINDOW | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
 placement = win32gui.GetWindowPlacement(hwnd)
-print(placement)
-
+print('placement: ', placement)
 print('ends')
 
 # pg.press('space', presses=1000, interval=0.5)
-
-
