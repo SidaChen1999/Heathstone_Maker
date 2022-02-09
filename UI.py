@@ -1,5 +1,6 @@
 import sys
 import traceback
+import keyboard
 from PyQt5.QtWidgets import QApplication, QLineEdit, QMenu, QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QRect, pyqtSlot, Qt
@@ -9,7 +10,7 @@ from Hearthstone import GetWindowRectFromName, check_state, error_state,\
     my_turn, out_game, logger_init, logger_deconstruct, setWindow, sleep, update_stats
 from parameters import *
 
-version = 'v0.05'
+version = 'v0.0.6'
 buttom_size = (200, 60)
 window_pos = QRect(0, 30, 400, 1000)
 font = QFont('Arial', 14)
@@ -69,14 +70,14 @@ class App(QWidget):
             rect = GetWindowRectFromName(hwnd_name)
         if rect is not None:
             self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
-        # regions = (left, top, width, height)
-        waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
+
+        # waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
         self.logger.info("script starts")
         state = 0
         self.var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
         self.update_stats_UI()
 
-        while self.started:
+        while self.started and keyboard.is_pressed('q') == False:
             try:
                 state = check_state(self.var, state)
                 self.logger.info('state: %i', state)
@@ -100,7 +101,7 @@ class App(QWidget):
             except:
                 self.logger.info(traceback.format_exc())
                 try:
-                    error_state(self.var, waiting_pos, self.logger)
+                    error_state(self.var, self.logger, QApplication)
                     self.var['timestamp'] = datetime.now()
                 except:
                     self.logger.info(traceback.format_exc())
@@ -120,7 +121,7 @@ class App(QWidget):
         self.started = False
         self.start.setChecked(False)
         self.stop.setChecked(True)
-        return
+        # QApplication.quit()
     
     def update_log_UI(self):
         with open(self.log_file_name, 'r', encoding='UTF-8') as log_file:

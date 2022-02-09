@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import ctypes
-from typing import Literal
 import pyautogui as pg
 import keyboard
 from datetime import datetime
@@ -148,7 +146,7 @@ def my_turn(param:param):
         if x_hero is not None:
             pg.click(x_hero+param.hero[0], y_hero+param.hero[1]+30, duration=0.2)
             pg.click(param.enemy_hero, duration=0.2)
-    pg.click(param.enemy_hero, clicks=2, interval=0.2, button='RIGHT', duration=0.2)
+    pg.click(param.enemy_hero, clicks=1, interval=0.2, button='RIGHT', duration=0.2)
 
 def out_game(var, param:param, logger: logging.Logger=None, QT=None):
     screenshotIm = pg.screenshot()
@@ -163,7 +161,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT=None):
         pg.click(pg.center(cor_start), duration=0.2)
         sleep(5, QT)
         while pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
-            sleep(0.5, QT)
+            sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                 return
         pg.click(pg.locateCenterOnScreen(img_confirm, grayscale=True, confidence=confi), duration=0.5)
@@ -307,7 +305,7 @@ if __name__ == '__main__':
 
     rect = GetWindowRectFromName(hwnd_name)
     if rect is None:
-        error_state(var, logger)
+        # error_state(var, logger)
         rect = GetWindowRectFromName(hwnd_name)
     elif rect != game_window:
         setWindow(hwnd_name, game_window)
@@ -335,7 +333,7 @@ if __name__ == '__main__':
         except (KeyboardInterrupt, pg.FailSafeException):
             break
         except OSError:
-            logger.info(traceback.format_exc())
+            logger.error(traceback.format_exc())
             continue
         except:
             logger.info(traceback.format_exc())

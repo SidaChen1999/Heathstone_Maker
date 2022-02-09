@@ -10,6 +10,8 @@ import sys
 from PyQt5.QtWidgets import QApplication, QLineEdit, QMenu, QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QRect, pyqtSlot, Qt
+from PyQt5.QtCore  import *
+from PyQt5.QtGui import *
 
 from Hearthstone import GetWindowRectFromName, checkIfProcessRunning, \
     delta, check_state, find_color, setWindow, sleep
@@ -17,73 +19,103 @@ from parameters import *
 
 # var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
 
-version = 'v0.05'
-window_pos = QRect(0, 30, 400, 1000)
-buttom_size = (200, 60)
-class App(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.started = False
-        self.var = {'win': 1, 'loss': 2, 'error': 3, 'timestamp': datetime.now()}
-        self.Header = QLabel('Hearthstone Maker ' + version, self)
-        self.start = QPushButton('Start Script', self)
-        self.start.clicked.connect(self.on_click_start)
-        self.start.setCheckable(True)
-        self.start.setGeometry(
-            int((window_pos.width()-buttom_size[0])/2), 300, 
-            buttom_size[0], buttom_size[1])
-        self.stop = QPushButton('Stop Script', self)
-        self.stop.clicked.connect(self.on_click_stop)
-        self.stop.setCheckable(True)
-        self.stop.setGeometry(
-            int((window_pos.width()-buttom_size[0])/2), 400, 
-            buttom_size[0], buttom_size[1])
-        self.initUI()
+class Worker(QObject):
+    sgnFinished = pyqtSignal()
 
-    def initUI(self):
-        self.setWindowTitle("Heathstone Maker")
-        self.setGeometry(window_pos)
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-    
+    def __init__(self, parent):
+        QObject.__init__(self, parent)
+        self._mutex = QMutex()
+        self._running = True
+
     @pyqtSlot()
-    def on_click_start(self):
-        if self.started:
-            return
-        self.started = True
-        while self.started:
-            self.stats_text = 'win: %i; loss: %i; error: %i; win rate: %.4f' %\
-                (self.var['win'], self.var['loss'], self.var['error'], self.var['win']/(self.var['win']+self.var['loss']))
-            print('error: %i' % self.var['error'])
-            print(self.stats_text)
-            sleep(5, QApplication)
-        
+    def stop(self):
+        print('switching while loop condition to false')
+        self._mutex.lock()
+        self._running = False
+        self._mutex.unlock()
+
+    def running(self):
+        try:
+            self._mutex.lock()
+            return self._running
+        finally:
+            self._mutex.unlock()
+
     @pyqtSlot()
-    def on_click_stop(self):
-        if not self.started:
-            return
-        self.started = False
+    def work(self):
+        while self.running():
+            pg.time.sleep(5)
+            print(datetime.now())
+        self.sgnFinished.emit()
 
-name = hwnd_name
-rect = game_window
-old_rect = GetWindowRectFromName(name)
+class Client(QObject):
+    def __init__(self, parent):
+        QObject.__init__(self, parent)
+        self._thread = None
+        self._worker = None
 
-hwnd = win32gui.FindWindow(None, name)
-placement = win32gui.GetWindowPlacement(hwnd)
-print('placement: ', placement)
-new_placement = list(placement)
-new_placement[0] = -1
-new_placement[1] = win32con.SW_SHOWNORMAL
-new_placement[4] = game_window
-win32gui.SetWindowPlacement(hwnd, new_placement)
-win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
-    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, 
-    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
-    win32con.SWP_SHOWWINDOW | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
-placement = win32gui.GetWindowPlacement(hwnd)
-print('placement: ', placement)
+    def toggle(self, enable):
+        if enable:
+            if not self._thread:
+                self._thread = QThread()
+
+            self._worker = Worker(None)
+            self._worker.moveToThread(self._thread)
+            self._worker.sgnFinished.connect(self.on_worker_done)
+
+            self._thread.started.connect(self._worker.work)
+            self._thread.start()
+        else:
+            print('stopping the worker object')
+            self._worker.stop()
+
+    @pyqtSlot()
+    def on_worker_done(self):
+        print('workers job was interrupted manually')
+        self._thread.quit()
+        self._thread.wait()
+        if input('\nquit application [Y/N]? ') != 'n':
+            QApplication.quit()
+
+if __name__ == '__main__':
+
+    # prevent some harmless Qt warnings
+    pyqtRemoveInputHook()
+
+    app = QCoreApplication(sys.argv)
+
+    client = Client(None)
+
+    def start():
+        client.toggle(True)
+        input('Press something\n')
+        client.toggle(False)
+
+    QTimer.singleShot(10, start)
+
+    sys.exit(app.exec_())
+
+# name = hwnd_name
+# rect = game_window
+# old_rect = GetWindowRectFromName(name)
+
+# hwnd = win32gui.FindWindow(None, name)
+# placement = win32gui.GetWindowPlacement(hwnd)
+# print('placement: ', placement)
+# new_placement = list(placement)
+# new_placement[0] = -1
+# new_placement[1] = win32con.SW_SHOWNORMAL
+# new_placement[4] = game_window
+# win32gui.SetWindowPlacement(hwnd, new_placement)
+# win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+# win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
+#     win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+# win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, 
+#     win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+# win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0, 
+#     win32con.SWP_SHOWWINDOW | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
+# placement = win32gui.GetWindowPlacement(hwnd)
+# print('placement: ', placement)
 print('ends')
 
 # pg.press('space', presses=1000, interval=0.5)
