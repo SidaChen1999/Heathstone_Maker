@@ -13,14 +13,19 @@ import signal
 import subprocess
 from PyQt5.QtWidgets import QApplication
 from parameters import *
+from threading import Event
 
-def sleep(time, QT:QApplication=None):
+event = Event()
+
+def sleep(time, QT:bool=None):
     if QT is None:
         pg.sleep(time)
     else:
         timer = datetime.now()
         while (datetime.now() - timer).seconds < time:
-            QT.processEvents()
+            if event.is_set():
+                return
+            QApplication.processEvents()
 def tuple_add(a:tuple, b:tuple):
     return tuple(map(lambda i, j: i + j, a, b))
 def tuple_sub(a:tuple, b:tuple):
@@ -64,7 +69,7 @@ def check_state(var, last_state=0, simple=False):
         var['timestamp'] = datetime.now()
     return next_state
 
-def error_state(var, logger: logging.Logger=None, QT=None):
+def error_state(var, logger: logging.Logger=None, QT:bool=None):
     var['error'] += 1
     if logger is None:
         print('error: %i' % var['error'])
@@ -99,10 +104,14 @@ def error_state(var, logger: logging.Logger=None, QT=None):
             pg.click(cor_play, duration=0.2)
             sleep(10, QT)
     while GetWindowRectFromName(hwnd_name) is None:
+        if event.is_set():
+            return
         sleep(1, QT)
         if (datetime.now() - var['timestamp']).seconds > timeout:
             break
     while pg.locateCenterOnScreen(img_traditional_game, grayscale=True, confidence=confi) == None:
+        if event.is_set():
+            return
         sleep(1, QT)
         rect = GetWindowRectFromName(hwnd_name)
         if rect != game_window:
@@ -131,7 +140,8 @@ def my_turn(param:param):
     if x_minions is not None:
         pg.click(x_minions+param.minions[0], y_minions+param.minions[1]+40, duration=0.2)
         enemy_hero_color = pg.pixel(param.enemy_hero[0], param.enemy_hero[1])
-        if delta(enemy_hero_color, red) < epsilon+50:
+        if enemy_hero_color[0]==255 and enemy_hero_color[1]==255 and enemy_hero_color[3]!=255:
+        # if delta(enemy_hero_color, red) < epsilon+60:
             pg.click(param.enemy_hero, duration=0.2)
         else:
             pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=param.enemy_minions)
@@ -148,7 +158,7 @@ def my_turn(param:param):
             pg.click(param.enemy_hero, duration=0.2)
     pg.click(param.enemy_hero, clicks=1, interval=0.2, button='RIGHT', duration=0.2)
 
-def out_game(var, param:param, logger: logging.Logger=None, QT=None):
+def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     screenshotIm = pg.screenshot()
     cor_start = pg.locate(img_start, screenshotIm, grayscale=True, confidence=confi)
     cor_traditional_game = pg.locate(img_traditional_game, screenshotIm, grayscale=True, confidence=confi)
@@ -161,6 +171,8 @@ def out_game(var, param:param, logger: logging.Logger=None, QT=None):
         pg.click(pg.center(cor_start), duration=0.2)
         sleep(5, QT)
         while pg.locateOnScreen(img_confirm, grayscale=True, confidence=confi) == None:
+            if event.is_set():
+                return
             sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                 return
@@ -181,6 +193,8 @@ def out_game(var, param:param, logger: logging.Logger=None, QT=None):
         else:
             logger.info('loss; win: %i; loss: %i' % (var['win'], var['loss']))
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
+            if event.is_set():
+                return
             pg.click(param.waiting_pos, duration=0.2)
             sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
@@ -192,6 +206,8 @@ def out_game(var, param:param, logger: logging.Logger=None, QT=None):
         else:
             logger.info('win; win: %i; loss: %i' % (var['win'], var['loss']))
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
+            if event.is_set():
+                return
             pg.click(param.waiting_pos, duration=0.2)
             sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
@@ -322,7 +338,7 @@ if __name__ == '__main__':
             state = check_state(var, state)
             logger.info('state: %i' % state)
             if state == 0:
-                out_game(var, param, logger)
+                out_game(var, params, logger)
             elif state == 1:
                 my_turn(params)
             elif state == 2:

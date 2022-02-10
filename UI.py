@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRect, pyqtSlot, Qt
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
 from Hearthstone import GetWindowRectFromName, check_state, error_state,\
-    my_turn, out_game, logger_init, logger_deconstruct, setWindow, sleep, update_stats
+    my_turn, out_game, logger_init, logger_deconstruct, setWindow, sleep, update_stats, event
 from parameters import *
 
 version = 'v0.0.6'
@@ -57,6 +57,7 @@ class App(QWidget):
         self.start.setChecked(True)
         self.stop.setChecked(False)
         self.started = True
+        event.clear()
 
         self.log_file_name = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
         self.logger = logger_init(self.log_file_name)
@@ -71,7 +72,6 @@ class App(QWidget):
         if rect is not None:
             self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
 
-        # waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
         self.logger.info("script starts")
         state = 0
         self.var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
@@ -80,17 +80,17 @@ class App(QWidget):
         while self.started and keyboard.is_pressed('q') == False:
             try:
                 state = check_state(self.var, state)
-                self.logger.info('state: %i', state)
+                self.logger.info('state: %i' % state)
                 self.update_log_UI()
                 if state == 0:
-                    out_game(self.var, self.param, self.logger, QApplication)
+                    out_game(self.var, self.param, self.logger, self.started)
                     self.update_log_UI()
                 elif state == 1:
                     my_turn(self.param)
                 elif state == 2:
-                    sleep(1, QApplication)
+                    sleep(1, self.started)
                 elif state == 3:
-                    error_state(self.var, self.logger, QApplication)
+                    error_state(self.var, self.logger, self.started)
                     self.var['timestamp'] = datetime.now()
                 QApplication.processEvents()
             except (KeyboardInterrupt, pg.FailSafeException):
@@ -101,7 +101,7 @@ class App(QWidget):
             except:
                 self.logger.info(traceback.format_exc())
                 try:
-                    error_state(self.var, self.logger, QApplication)
+                    error_state(self.var, self.logger, self.started)
                     self.var['timestamp'] = datetime.now()
                 except:
                     self.logger.info(traceback.format_exc())
@@ -119,9 +119,9 @@ class App(QWidget):
         if not self.started:
             return
         self.started = False
+        event.set()
         self.start.setChecked(False)
         self.stop.setChecked(True)
-        # QApplication.quit()
     
     def update_log_UI(self):
         with open(self.log_file_name, 'r', encoding='UTF-8') as log_file:
