@@ -140,8 +140,7 @@ def my_turn(param:param):
     if x_minions is not None:
         pg.click(x_minions+param.minions[0], y_minions+param.minions[1]+40, duration=0.2)
         enemy_hero_color = pg.pixel(param.enemy_hero[0], param.enemy_hero[1])
-        if enemy_hero_color[0]==255 and enemy_hero_color[1]==255 and enemy_hero_color[3]!=255:
-        # if delta(enemy_hero_color, red) < epsilon+60:
+        if enemy_hero_color[0]==255 and enemy_hero_color[1]==255 and enemy_hero_color[2]!=255:
             pg.click(param.enemy_hero, duration=0.2)
         else:
             pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=param.enemy_minions)
