@@ -49,11 +49,8 @@ def check_state(var, last_state=0, simple=False):
     screenshotIm = pg.screenshot()
     cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
     cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
-    cor_my_turn1 = pg.locate(img_my_turn1, screenshotIm, grayscale=False, confidence=confi)
     cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
     if cor_my_turn != None:
-        next_state = 1
-    elif cor_my_turn1 != None:
         next_state = 1
     elif cor_enemy_turn != None:
         next_state = 2
