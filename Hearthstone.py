@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from tkinter import E
 import pyautogui as pg
 import keyboard
 from datetime import datetime
@@ -120,6 +121,8 @@ def error_state(var, logger: logging.Logger=None, QT:bool=None):
                 waiting_pos = ((rect[0]+rect[2])/2, rect[1]+870)
             else:
                 waiting_pos = screensize
+        else:
+            waiting_pos = ((rect[0]+rect[2])/2, rect[1]+870)
         pg.click(waiting_pos, duration=0.2)
         if check_state(var, simple=True) != 0:
             break
