@@ -305,11 +305,11 @@ def update_stats(var, logger: logging.Logger=None):
     for row in rows:
         wins += int(row[0])
         losses += int(row[1])
-    if logger is None:
-        print('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
-    else:
-        logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
-    return
+    if wins + losses != 0:
+        if logger is None:
+            print('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
+        else:
+            logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
 
 if __name__ == '__main__':
     log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
@@ -320,9 +320,9 @@ if __name__ == '__main__':
 
     rect = GetWindowRectFromName(hwnd_name)
     if rect is None:
-        # error_state(var, logger)
+        error_state(var, logger)
         rect = GetWindowRectFromName(hwnd_name)
-    elif rect != game_window:
+    else:
         setWindow(hwnd_name, game_window)
         rect = GetWindowRectFromName(hwnd_name)
     if rect is not None:

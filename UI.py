@@ -66,7 +66,7 @@ class App(QWidget):
         if rect is None:
             error_state(self.var, self.logger)
             rect = GetWindowRectFromName(hwnd_name)
-        elif rect != game_window:
+        else:
             setWindow(hwnd_name, game_window)
             rect = GetWindowRectFromName(hwnd_name)
         if rect is not None:

@@ -12,7 +12,6 @@ img_battlenet = 'pics/battlenet.jpg'
 img_hearthstone = 'pics/hearthstone.jpg'
 img_click = 'pics/click.jpg'
 img_close = 'pics/close.jpg'
-log_path = 'G:\Hearthstone\Logs\Power.log'
 hwnd_name = '炉石传说'
 pid_name = 'Hearthstone.exe'
 

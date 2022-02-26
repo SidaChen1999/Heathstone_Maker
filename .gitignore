@@ -33,6 +33,7 @@ MANIFEST
 *.spec
 *.exe
 *.dll
+release/
 
 # Installer logs
 pip-log.txt
