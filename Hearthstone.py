@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from tkinter import E
 import pyautogui as pg
 import keyboard
 from datetime import datetime
@@ -120,7 +119,7 @@ def error_state(var, logger: logging.Logger=None, QT:bool=None):
                 waiting_pos = screensize
         else:
             waiting_pos = ((rect[0]+rect[2])/2, rect[1]+870)
-        pg.click(waiting_pos, duration=0.2)
+        pg.click(waiting_pos)
         if check_state(var, simple=True) != 0:
             break
         if (datetime.now() - var['timestamp']).seconds > timeout:
@@ -140,7 +139,7 @@ def my_turn(param:param):
     if x_minions is not None:
         pg.click(x_minions+param.minions[0], y_minions+param.minions[1]+40, duration=0.2)
         enemy_hero_color = pg.pixel(param.enemy_hero[0], param.enemy_hero[1])
-        if enemy_hero_color[0]>245 and enemy_hero_color[1]>245 and enemy_hero_color[2]!=255:
+        if enemy_hero_color[0]>235 and enemy_hero_color[1]>235 and enemy_hero_color[2]<235:
             pg.click(param.enemy_hero, duration=0.2)
         else:
             pic_enemy_minions = pg.screenshot('test_pics/enemy_minions.jpg', region=param.enemy_minions)

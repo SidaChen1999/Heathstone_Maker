@@ -64,7 +64,7 @@ class App(QWidget):
 
         rect = GetWindowRectFromName(hwnd_name)
         if rect is None:
-            error_state(self.var, self.logger)
+            error_state(self.var, self.logger, self.started)
             rect = GetWindowRectFromName(hwnd_name)
         else:
             setWindow(hwnd_name, game_window)
@@ -94,6 +94,7 @@ class App(QWidget):
                     self.var['timestamp'] = datetime.now()
                 QApplication.processEvents()
             except (KeyboardInterrupt, pg.FailSafeException):
+                self.stop.click()
                 break
             except OSError:
                 self.logger.info(traceback.format_exc())
