@@ -19,5 +19,9 @@ from parameters import *
 
 var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
 
-pg.press('space', presses=1000, interval=0.5)
+params = param()
+cor = pg.locateOnScreen(img_acquire, grayscale=True, confidence=confi)
+print(cor)
+
+# pg.press('space', presses=1000, interval=0.5)
 print('ends')

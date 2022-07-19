@@ -1,27 +1,226 @@
+import logging
+import traceback
 import keyboard
 import pyautogui as pg
+from Hearthstone import GetWindowRectFromName, delta, error_state, find_color, logger_deconstruct, \
+    logger_init, setWindow, sleep, update_stats
+from parameters import *
+from datetime import datetime
+from threading import Event
 
-SLEEP = 1.5
-while keyboard.is_pressed('s') == False:
-    print('waiting')
-    pg.sleep(0.1)
-cnt = 0
-while keyboard.is_pressed('space') == False:
-    pg.click(950, 700) # card
-    pg.sleep(SLEEP)
-    pg.click(1127, 474) # summon ability
-    pg.sleep(SLEEP)
-    pg.click(1519, 483) # end
-    pg.sleep(6)
-    pg.click(950, 700) # card
-    pg.sleep(SLEEP)
-    pg.click(785, 474) # kill ability
-    pg.sleep(SLEEP)
-    pg.click(884, 307) # point to enemy
-    pg.sleep(SLEEP)
-    pg.click(1519, 483) # end
-    pg.sleep(10)
-    cnt = cnt + 1
-    print('Counted: ', cnt)
-      
-print('ends')
+merc_event = Event()
+
+def check_state(var, param:param, last_state=0, simple=False):
+    screenshotIm = pg.screenshot()
+    cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
+    color = pg.pixel(param.my_turn_point[0], param.my_turn_point[1])
+    if delta(color, my_turn_color) < epsilon:
+        print("My turn")
+        next_state = 1
+    elif delta(color, enemy_turn_color) < epsilon:
+        print("Enemy turn")
+        next_state = 2
+    elif delta(color, end_turn_color) < epsilon:
+        print("End turn")
+        next_state = 4
+    elif cor_play != None:
+        print("Error")
+        next_state = 3
+    else:
+        print("Out game")
+        next_state = 0
+    if simple:
+        return next_state
+    if last_state == next_state:
+        if (datetime.now() - var['timestamp']).seconds > timeout:
+            next_state = 3
+    else:
+        var['timestamp'] = datetime.now()
+    return next_state
+
+def my_turn(param:param):
+    pic_cards = pg.screenshot('test_pics/cards.jpg', region=param.cards)
+    pic_mercenary_ability = pg.screenshot('test_pics/mercenary_ability.jpg', region=param.mercenary_ability)
+
+    x_cards, y_cards = find_color(pic_cards, 2, epsilon, green)
+    if x_cards is not None:
+        print("find cards")
+        pg.click(x_cards+param.cards[0], y_cards+param.cards[1]+20, duration=0.2)
+        pg.click(param.enemy_hero, clicks=2, interval=0.5, duration=0.2)
+
+    x_minions, y_minions = find_color(pic_mercenary_ability, 5, epsilon, green, green2, yellow)
+    if x_minions is not None:
+        print("find ability")
+        pg.click(x_minions+param.mercenary_ability[0], y_minions+param.mercenary_ability[1]+40, duration=0.2)
+        pic_enemy_minions = pg.screenshot('test_pics/enemy_mercenary.jpg', region=param.enemy_mercenary)
+        x_enemy, y_enemy = find_color(pic_enemy_minions, 5, epsilon, red)
+        if x_enemy is not None:
+            print("find enemy")
+            pg.click(x_enemy+param.enemy_mercenary[0]+20, y_enemy+param.enemy_mercenary[1]+40, duration=0.2)
+        else:
+            pg.click(param.default_mercenary, duration=0.2)
+    pg.click(param.enemy_hero, clicks=1, interval=0.2, button='RIGHT', duration=0.2)
+
+def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
+    screenshotIm = pg.screenshot()
+    cor_merc_start = pg.locate(img_merc_start, screenshotIm, grayscale=True, confidence=confi)
+    cor_mercenary = pg.locate(img_mercenary, screenshotIm, grayscale=True, confidence=confi)
+    cor_travel_point = pg.locate(img_travel_point, screenshotIm, grayscale=True, confidence=0.6)
+    cor_select_travel = pg.locate(img_select_travel, screenshotIm, grayscale=True, confidence=confi)
+    cor_select_level = pg.locate(img_select_level, screenshotIm, grayscale=True, confidence=confi)
+    cor_lock = pg.locate(img_lock, screenshotIm, grayscale=True, confidence=confi)
+    cor_fight = pg.locate(img_fight, screenshotIm, grayscale=True, confidence=confi)
+    cor_proceed = pg.locate(img_proceed, screenshotIm, grayscale=True, confidence=confi)
+    cor_victory = pg.locate(img_victory, screenshotIm, grayscale=True, confidence=confi)
+    cor_treasure = pg.locate(img_treasure, screenshotIm, grayscale=True, confidence=confi)
+    cor_merc_level = pg.locate(img_mercenary_level, screenshotIm, grayscale=True, confidence=confi)
+    cor_open_treasure = pg.locate(img_open_treasure, screenshotIm, grayscale=False, confidence=0.9)
+    cor_finish = pg.locate(img_finish, screenshotIm, grayscale=True, confidence=confi)
+    cor_merc_confirm = pg.locate(img_merc_confirm, screenshotIm, grayscale=True, confidence=confi)
+
+    if cor_merc_start != None:
+        pg.click(pg.center(cor_merc_start), duration=0.2)
+        print("merc start")
+        sleep(1, QT)
+    elif cor_mercenary != None:
+        pg.click(pg.center(cor_mercenary), duration=0.2)
+        print("mercenary")
+        sleep(3, QT)
+    elif cor_travel_point != None:
+        pg.click(pg.center(cor_travel_point), duration=0.2)
+        print("travel point")
+        sleep(1, QT)
+    elif cor_select_travel != None:
+        print("merc select travel")
+        pg.click(pg.center(cor_select_travel), duration=0.2)
+        sleep(1, QT)
+    elif cor_lock != None:
+        print("merc lock")
+        pg.click(pg.center(cor_lock), duration=0.2)
+        sleep(1, QT)
+    elif cor_select_level != None:
+        print("merc select level")
+        pg.click(pg.center(cor_select_level), duration=0.2)
+        sleep(1, QT)
+    elif cor_fight != None:
+        print("merc fight")
+        pg.click(pg.center(cor_fight), duration=0.2)
+        sleep(1, QT)
+    elif cor_proceed != None:
+        print("merc proceed")
+        pg.click(pg.center(cor_proceed), duration=0.2)
+        sleep(1, QT)
+    elif cor_treasure != None:
+        print("merc treasure")
+        pg.click(pg.center(cor_treasure), duration=0.2)
+        sleep(1, QT)
+    elif cor_merc_level != None:
+        print("merc choose level")
+        pg.click(pg.center(cor_merc_level), duration=0.2)
+        sleep(1, QT)
+    elif cor_victory != None:
+        print("merc victory")
+        while True:
+            cor_acquire = pg.locateOnScreen(img_acquire, grayscale=True, confidence=confi)
+            cor_open_treasure = pg.locateOnScreen(img_open_treasure, grayscale=False, confidence=0.9)
+            if cor_acquire != None or cor_open_treasure != None:
+                print("acquire: ", cor_acquire, "; open treasure: ", cor_open_treasure)
+                break
+            if merc_event.is_set():
+                return
+            pg.click((game_window[0]+game_window[2])/2, (game_window[1]+game_window[3])/2, duration=0.2)
+            sleep(0.5, QT)
+            if (datetime.now() - var['timestamp']).seconds > timeout:
+                    return
+        if cor_acquire != None:
+            pg.click(cor_acquire, duration=0.2)
+            sleep(2, QT)
+            pg.click(param.merc_waiting_pos, duration=0.2)
+        sleep(0.5, QT)
+    elif cor_open_treasure != None:
+        print("merc opened treasure")
+        open_treasure(param, QT)
+    elif cor_finish != None:
+        print("merc open treasure finish")
+        pg.click(pg.center(cor_finish), duration=0.2)
+        sleep(1, QT)
+    elif cor_merc_confirm != None:
+        print("merc confirm")
+        pg.click(pg.center(cor_merc_confirm), duration=0.2)
+        sleep(1, QT)
+    elif pg.locate(img_no_enemy, screenshotIm, grayscale=True, confidence=confi) != None:
+        print("merc find enemy")
+        pic_enemy_region = pg.screenshot('test_pics/enemy_region.jpg', region=param.enemy_region)
+        x_enemy, y_enemy = find_color(pic_enemy_region, 2, epsilon, green, green2, merc_green)
+        print("Enemy at: ", (x_enemy, y_enemy))
+        if x_enemy is not None:
+            pg.click(x_enemy+param.enemy_region[0], y_enemy+param.enemy_region[1]+20,
+                clicks=2, duration=0.2)
+    pg.click(param.merc_waiting_pos, duration=0.5)
+
+def end_turn(param:param, QT:bool=None):
+    pg.click(param.my_turn_point, duration=0.2)
+    sleep(1, QT)
+    return
+
+def open_treasure(param:param, QT:bool=None):
+    pic_treasure_region = pg.screenshot('test_pics/treasure_region.jpg', region=param.treasure_region)
+    x_treasure, y_treasure = find_color(pic_treasure_region, 2, epsilon, gold)
+    print("treasure at: ", (x_treasure, y_treasure))
+    if x_treasure is not None:
+        pg.click(x_treasure+param.treasure_region[0], y_treasure+param.treasure_region[1], duration=0.2)
+        pg.click(param.merc_waiting_pos, duration=0.2)
+
+if __name__ == '__main__':
+    log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
+    logger = logger_init(log_file_start)
+    
+    var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now(), 'rounds': 0}
+    state = 0
+
+    rect = GetWindowRectFromName(hwnd_name)
+    if rect is None:
+        error_state(var, logger)
+        rect = GetWindowRectFromName(hwnd_name)
+    else:
+        setWindow(hwnd_name, game_window)
+        rect = GetWindowRectFromName(hwnd_name)
+    if rect is not None:
+        logger.info('game window: (%i, %i, %i, %i)' % rect)
+
+    # waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
+    params = param()
+
+    logger.info("script starts")
+    while keyboard.is_pressed('q') == False:
+        try:
+            state = check_state(var, params, state)
+            logger.info('state: %i' % state)
+            if state == 0:
+                out_game(var, params, logger)
+            elif state == 1:
+                my_turn(params)
+            elif state == 2:
+                sleep(1)
+            elif state == 3:
+                error_state(var, logger)
+                var['timestamp'] = datetime.now()
+            elif state == 4:
+                end_turn(params)
+        except (KeyboardInterrupt, pg.FailSafeException):
+            break
+        except OSError:
+            logger.error(traceback.format_exc())
+            continue
+        except:
+            logger.info(traceback.format_exc())
+            try:
+                error_state(var, logger)
+                var['timestamp'] = datetime.now()
+            except:
+                logger.info(traceback.format_exc())
+                break
+    
+    logger.info("script ends")
+    update_stats(var, logger)
+    logger_deconstruct(logger, log_file_start)
