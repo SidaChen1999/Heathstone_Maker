@@ -29,6 +29,10 @@ img_no_enemy = 'pics/no_enemy.jpg'
 img_open_treasure = 'pics/open_treasure.jpg'
 img_treasure = 'pics/treasure.jpg'
 img_finish = 'pics/finish.jpg'
+img_select_treasure = 'pics/select_treasure.jpg'
+img_campfire = 'pics/campfire.jpg'
+img_receive = 'pics/receive.jpg'
+img_jump = 'pics/jump.jpg'
 
 hwnd_name = '炉石传说'
 pid_name = 'Hearthstone.exe'
@@ -41,8 +45,11 @@ red = (255, 255, 126)
 blue = (55, 222, 255)
 gold = (255, 255, 25)
 my_turn_color = (200, 160, 0)
+my_turn_color2 = (215, 187, 13)
 enemy_turn_color = (146, 117, 93)
+enemy_turn_color2 = (106, 102, 94)
 end_turn_color = (36, 160, 0)
+end_turn_color2 = (51, 189, 17)
 confi = 0.80
 timeout = 120 # seconds
 epsilon = 15
@@ -71,23 +78,26 @@ class param():
         self.red = (255, 255, 126)
         self.confi = 0.8
         self.timeout = 120 # seconds
-        self.epsilon = 20
+        self.epsilon = 15
         screensize = (int(pg.size()[0]/2), int(pg.size()[1]/2))
         self.game_window = (screensize[0]-960-8, screensize[1]-540-30, screensize[0]+960+8, screensize[1]+540+8)
         self.update(self.game_window)
     
     def update(self, game_window):
+        # Rect
         self.game_window = game_window
         self.cards = (game_window[0]+650, game_window[1]+980, 600, 40)
         self.minions = (game_window[0]+380, game_window[1]+530, 1050, 30)
         self.enemy_minions = (game_window[0]+420, game_window[1]+345, 1020, 30)
         self.hero = (game_window[0]+780, game_window[1]+800, 460, 30)
-        self.enemy_hero = (game_window[0]+933, game_window[1]+143)
         self.mercenary_ability = (game_window[0]+660, game_window[1]+437, 600, 30)
         self.enemy_mercenary = (game_window[0]+460, game_window[1]+230, 1000, 30)
+        self.enemy_region = (game_window[0]+300, game_window[1]+70, 970, 920)
+        self.treasure_region = (game_window[0]+8, game_window[1]+32, game_window[2]-game_window[0]-16, game_window[3]-game_window[1]-80)
+        # point
+        self.enemy_hero = (game_window[0]+933, game_window[1]+143)
         self.default_mercenary = ((game_window[0]+game_window[2])/2-20, game_window[1]+330)
         self.waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
-        self.merc_waiting_pos = ((game_window[0]+game_window[2])/2, game_window[3]-40)
-        self.my_turn_point = (game_window[0]+1613, game_window[1]+526)
-        self.enemy_region = (game_window[0]+300, game_window[1]+70, 970, 920)
-        self.treasure_region = (game_window[0], game_window[1], game_window[2]-game_window[0], game_window[3]-game_window[1])
+        self.merc_waiting_pos = ((game_window[0]+game_window[2])/2, game_window[3]-80)
+        self.my_turn_point = (game_window[0]+1615, game_window[1]+526)
+        self.mid_point = (game_window[0]+game_window[2])/2, (game_window[1]+game_window[3])/2

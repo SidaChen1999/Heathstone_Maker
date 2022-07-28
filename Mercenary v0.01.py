@@ -2,11 +2,12 @@ import logging
 import traceback
 import keyboard
 import pyautogui as pg
+from Hearthstone import logger_deconstruct, logger_init, update_stats
 from parameters import *
 from datetime import datetime
 from threading import Event
 from util import GetWindowRectFromName, check_state, end_turn, error_state, \
-    event, find_color, logger_deconstruct, logger_init, setWindow, sleep, update_stats
+    event, find_color, setWindow, sleep
 
 def my_turn(param:param):
     pic_cards = pg.screenshot('test_pics/cards.jpg', region=param.cards)
@@ -45,11 +46,10 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     cor_treasure = pg.locate(img_treasure, screenshotIm, grayscale=True, confidence=confi)
     cor_merc_level = pg.locate(img_mercenary_level, screenshotIm, grayscale=True, confidence=confi)
     cor_open_treasure = pg.locate(img_open_treasure, screenshotIm, grayscale=False, confidence=0.9)
-    cor_finish = pg.locate(img_finish, screenshotIm, grayscale=False, confidence=0.6)
+    cor_finish = pg.locate(img_finish, screenshotIm, grayscale=True, confidence=0.7)
     cor_merc_confirm = pg.locate(img_merc_confirm, screenshotIm, grayscale=True, confidence=confi)
     cor_select_treasure = pg.locate(img_select_treasure, screenshotIm, grayscale=True, confidence=confi)
     cor_campfire = pg.locate(img_campfire, screenshotIm, grayscale=True, confidence=confi)
-    cor_jump = pg.locate(img_jump, screenshotIm, grayscale=True, confidence=confi)
 
     if cor_merc_start != None:
         pg.click(pg.center(cor_merc_start), duration=0.2)
@@ -90,7 +90,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     elif cor_merc_level != None:
         print("merc choose level")
         pg.click(pg.center(cor_merc_level), duration=0.2)
-        sleep(1, QT)
+        sleep(2, QT)
     elif cor_victory != None:
         print("merc victory")
         pg.click((game_window[0]+game_window[2])/2, (game_window[1]+game_window[3])/2, duration=0.2)
@@ -156,10 +156,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
                 pg.click(param.merc_waiting_pos, duration=0.2)
             else:
                 pg.click(pg.locateOnScreen(img_receive, grayscale=True, confidence=confi), duration=0.2)
-    elif cor_jump != None:
-        print("merc jump")
-        pg.click(pg.center(cor_jump), duration=0.2)
-        sleep(1, QT)
+
     # pg.click(param.merc_waiting_pos, duration=0.2)
     # pg.click(param.merc_waiting_pos, button='RIGHT', duration=0.2)
 

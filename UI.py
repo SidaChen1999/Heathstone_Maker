@@ -6,11 +6,12 @@ from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QRect, pyqtSlot, Qt
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
-from Hearthstone import GetWindowRectFromName, check_state, error_state,\
-    my_turn, out_game, logger_init, logger_deconstruct, setWindow, sleep, update_stats, event
+from Hearthstone import my_turn, out_game
+from util import GetWindowRectFromName, check_state, end_turn, error_state, \
+    logger_deconstruct, logger_init, setWindow, sleep, event, update_stats
 from parameters import *
 
-version = 'v0.0.6'
+version = 'v0.0.7'
 buttom_size = (200, 60)
 window_pos = QRect(0, 30, 400, 1000)
 font = QFont('Arial', 14)
@@ -64,7 +65,7 @@ class App(QWidget):
 
         rect = GetWindowRectFromName(hwnd_name)
         if rect is None:
-            error_state(self.var, self.logger, self.started)
+            error_state(self.var, self.param, self.logger, self.started)
             rect = GetWindowRectFromName(hwnd_name)
         else:
             setWindow(hwnd_name, game_window)
@@ -79,7 +80,7 @@ class App(QWidget):
 
         while self.started and keyboard.is_pressed('q') == False:
             try:
-                state = check_state(self.var, state)
+                state = check_state(self.var, self.param, state)
                 self.logger.info('state: %i' % state)
                 self.update_log_UI()
                 if state == 0:
@@ -90,8 +91,10 @@ class App(QWidget):
                 elif state == 2:
                     sleep(1, self.started)
                 elif state == 3:
-                    error_state(self.var, self.logger, self.started)
+                    error_state(self.var, self.param, self.logger, self.started)
                     self.var['timestamp'] = datetime.now()
+                elif state == 4:
+                    end_turn(self.param)
                 QApplication.processEvents()
             except (KeyboardInterrupt, pg.FailSafeException):
                 self.stop.click()
@@ -102,7 +105,7 @@ class App(QWidget):
             except:
                 self.logger.info(traceback.format_exc())
                 try:
-                    error_state(self.var, self.logger, self.started)
+                    error_state(self.var, self.param, self.logger, self.started)
                     self.var['timestamp'] = datetime.now()
                 except:
                     self.logger.info(traceback.format_exc())

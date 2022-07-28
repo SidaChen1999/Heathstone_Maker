@@ -13,15 +13,16 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import keyboard
 
-from Hearthstone import GetWindowRectFromName, checkIfProcessRunning, \
-    delta, check_state, error_state, find_color, my_turn, out_game, setWindow, sleep, event
 from parameters import *
+from util import delta
 
 var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
-
 params = param()
-cor = pg.locateOnScreen(img_acquire, grayscale=True, confidence=confi)
-print(cor)
+
+color = (51, 189, 17)
+if delta(color, end_turn_color) < epsilon:
+    print("My turn")
+print(delta(color, end_turn_color))
 
 # pg.press('space', presses=1000, interval=0.5)
 print('ends')
