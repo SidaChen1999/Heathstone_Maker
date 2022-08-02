@@ -4,7 +4,7 @@ import keyboard
 import pyautogui as pg
 from parameters import *
 from datetime import datetime
-from util import GetWindowRectFromName, check_state, end_turn, error_state, \
+from util import GetWindowRectFromName, check_state_merc, end_turn, error_state, \
     event, find_color, logger_deconstruct, logger_init, setWindow, sleep, update_stats
 
 def my_turn(param:param):
@@ -221,7 +221,7 @@ if __name__ == '__main__':
     logger.info("script starts")
     while keyboard.is_pressed('q') == False:
         try:
-            state = check_state(var, params, state)
+            state = check_state_merc(var, params, state)
             logger.info('state: %i' % state)
             if state == 0:
                 out_game(var, params, logger)
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             elif state == 2:
                 sleep(1)
             elif state == 3:
-                error_state(var, params, logger)
+                error_state(var, params, logger, merc=True)
                 var['timestamp'] = datetime.now()
             elif state == 4:
                 end_turn(params)
@@ -243,7 +243,7 @@ if __name__ == '__main__':
         except:
             logger.info(traceback.format_exc())
             try:
-                error_state(var, params, logger)
+                error_state(var, params, logger, merc=True)
                 var['timestamp'] = datetime.now()
             except:
                 logger.info(traceback.format_exc())

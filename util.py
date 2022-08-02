@@ -40,7 +40,7 @@ def find_color(pic, step=1, eps=1, *target_colors) -> tuple:
                     return(x, y)
     return (None, None)
 
-def check_state(var, param:param, last_state=0, simple=False):
+def check_state_merc(var, param:param, last_state=0, simple=False):
     screenshotIm = pg.screenshot('test_pics/game.jpg', region=param.game_window)
     cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
     color = pg.pixel(param.my_turn_point[0], param.my_turn_point[1])
@@ -71,12 +71,38 @@ def check_state(var, param:param, last_state=0, simple=False):
         var['timestamp'] = datetime.now()
     return next_state
 
+def check_state(var, last_state=0, simple=False):
+    screenshotIm = pg.screenshot()
+    cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
+    cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
+    cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
+    cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
+    cor_end_turn = pg.locate(img_end_turn, screenshotIm, grayscale=True, confidence=confi)
+    if cor_my_turn != None:
+        next_state = 1
+    elif cor_enemy_turn != None:
+        next_state = 2
+    elif cor_play != None:
+        next_state = 3
+    elif cor_end_turn != None:
+        next_state = 4
+    else:
+        next_state = 0
+    if simple:
+        return next_state
+    if last_state == next_state:
+        if (datetime.now() - var['timestamp']).seconds > timeout:
+            next_state = 3
+    else:
+        var['timestamp'] = datetime.now()
+    return next_state
+
 def end_turn(param:param, QT:bool=None):
-    pg.click(param.my_turn_point[0]+5, param.my_turn_point[1]+5, duration=0.2)
+    pg.click(param.my_turn_point[0], param.my_turn_point[1], duration=0.2)
     sleep(1, QT)
     return
 
-def error_state(var, param:param, logger: logging.Logger=None, QT:bool=None):
+def error_state(var, param:param, logger: logging.Logger=None, QT:bool=None, merc=False):
     var['error'] += 1
     if logger is None:
         print('error: %i' % var['error'])
@@ -130,8 +156,12 @@ def error_state(var, param:param, logger: logging.Logger=None, QT:bool=None):
         else:
             waiting_pos = ((rect[0]+rect[2])/2, rect[1]+870)
         pg.click(waiting_pos)
-        if check_state(var, param, simple=True) != 0:
-            break
+        if merc:
+            if check_state_merc(var, param, simple=True) != 0:
+                break
+        else:
+            if check_state(var, param, simple=True) != 0:
+                break
         if (datetime.now() - var['timestamp']).seconds > timeout:
             break
 
