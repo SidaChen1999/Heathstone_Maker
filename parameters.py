@@ -33,6 +33,9 @@ img_select_treasure = 'pics/select_treasure.jpg'
 img_campfire = 'pics/campfire.jpg'
 img_receive = 'pics/receive.jpg'
 img_jump = 'pics/jump.jpg'
+img_pickup = 'pics/pick_up.jpg'
+img_reveal = 'pics/reveal.jpg'
+img_buble = 'pics/buble.jpg'
 
 hwnd_name = '炉石传说'
 pid_name = 'Hearthstone.exe'
@@ -99,5 +102,5 @@ class param():
         self.default_mercenary = ((game_window[0]+game_window[2])/2-20, game_window[1]+330)
         self.waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
         self.merc_waiting_pos = ((game_window[0]+game_window[2])/2, game_window[3]-80)
-        self.my_turn_point = (game_window[0]+1615, game_window[1]+526)
+        self.my_turn_point = (game_window[0]+1613, game_window[1]+526)
         self.mid_point = (game_window[0]+game_window[2])/2, (game_window[1]+game_window[3])/2

@@ -48,9 +48,9 @@ def check_state(var, param:param, last_state=0, simple=False):
     if delta(color, my_turn_color) < 30 or delta(color, my_turn_color2) < 30:
         print("My turn")
         next_state = 1
-    elif delta(color, enemy_turn_color) < epsilon or delta(color, enemy_turn_color2) < epsilon:
-        print("Enemy turn")
-        next_state = 2
+    # elif delta(color, enemy_turn_color) < epsilon or delta(color, enemy_turn_color2) < epsilon:
+    #     print("Enemy turn")
+    #     next_state = 2
     elif delta(color, end_turn_color) < epsilon or delta(color, end_turn_color2) < epsilon:
         print("End turn")
         next_state = 4
@@ -203,8 +203,8 @@ def logger_deconstruct(logger, filename=None):
             print('rename log file error')
     return
     
-def update_stats(var, logger: logging.Logger=None):
-    rows = []
+def update_stats(var, logger:logging.Logger=None, saving=True):
+    rows = [] 
     with open('dist/stats.csv', 'r', newline='') as csvfile:
         csvreader = csv.reader(csvfile)
         header = next(csvreader)
@@ -218,10 +218,11 @@ def update_stats(var, logger: logging.Logger=None):
             logger.info('win: %i; loss: %i; error: %i; win rate: %.4f' % \
                 (var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss'])))
         rows.append([str(var[a]) for a in var])
-        with open('dist/stats.csv', 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(header)
-            csvwriter.writerows(rows)
+        if saving:
+            with open('dist/stats.csv', 'w', newline='') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(header)
+                csvwriter.writerows(rows)
     wins, losses = 0, 0
     for row in rows:
         wins += int(row[0])

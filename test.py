@@ -14,15 +14,19 @@ from PyQt5.QtWidgets import *
 import keyboard
 
 from parameters import *
-from util import delta
+from util import delta, sleep
 
 var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
-params = param()
+params = param()  
 
-color = (51, 189, 17)
+color = (100, 98, 97)
 if delta(color, end_turn_color) < epsilon:
     print("My turn")
-print(delta(color, end_turn_color))
+print(delta(color, enemy_turn_color2))
+
+while keyboard.is_pressed('q') == False:
+    pg.press('space')
+    sleep(0.1)
 
 # pg.press('space', presses=1000, interval=0.5)
 print('ends')
