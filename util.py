@@ -45,13 +45,15 @@ def check_state(var, param:param, last_state=0, simple=False):
     cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
     color = pg.pixel(param.my_turn_point[0], param.my_turn_point[1])
     print("state color: ", color)
-    if delta(color, my_turn_color) < 30 or delta(color, my_turn_color2) < 30:
+    if delta(color, my_turn_color) < epsilon or \
+       delta(color, my_turn_color_merc) < epsilon:
         print("My turn")
         next_state = 1
     # elif delta(color, enemy_turn_color) < epsilon or delta(color, enemy_turn_color2) < epsilon:
     #     print("Enemy turn")
     #     next_state = 2
-    elif delta(color, end_turn_color) < epsilon or delta(color, end_turn_color2) < epsilon:
+    elif delta(color, end_turn_color) < epsilon or \
+         delta(color, end_turn_color_merc) < epsilon:
         print("End turn")
         next_state = 4
     elif cor_play != None:
@@ -167,7 +169,7 @@ def checkIfProcessRunning(processName:str, kill=False):
     '''Return the process id if it is running or return None'''
     call = 'TASKLIST', '/FI', 'imagename eq %s' % processName
     # use buildin check_output right away
-    output = subprocess.check_output(call).decode()
+    output = subprocess.check_output(call).decode('gb18030')
     # check in last line for process name
     last_line = output.strip().split('\r\n')[-1]
     if last_line.lower().startswith(processName.lower()):

@@ -19,14 +19,13 @@ from util import delta, sleep
 var = {'win': 20, 'loss': 30, 'error': 10, 'timestamp': datetime.now()}
 params = param()  
 
-color = (100, 98, 97)
-if delta(color, end_turn_color) < epsilon:
-    print("My turn")
-print(delta(color, enemy_turn_color2))
+# color = (100, 98, 97)
+# if delta(color, end_turn_color) < epsilon:
+#     print("My turn")
+# print(delta(color, enemy_turn_color_merc))
 
 while keyboard.is_pressed('q') == False:
     pg.press('space')
     sleep(0.1)
 
-# pg.press('space', presses=1000, interval=0.5)
 print('ends')

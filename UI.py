@@ -7,6 +7,7 @@ from PyQt5.QtCore import QRect, pyqtSlot, Qt
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
 from Hearthstone import my_turn, out_game
+# from Mercenary import my_turn, out_game
 from util import GetWindowRectFromName, check_state, end_turn, error_state, \
     logger_deconstruct, logger_init, setWindow, sleep, event, update_stats
 from parameters import *
