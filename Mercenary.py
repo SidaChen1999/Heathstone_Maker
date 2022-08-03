@@ -226,8 +226,7 @@ if __name__ == '__main__':
             if state == 0:
                 out_game(var, params, logger)
             elif state == 1:
-                # my_turn(params)
-                pass
+                my_turn(params)
             elif state == 2:
                 sleep(1)
             elif state == 3:

@@ -26,6 +26,6 @@ params = param()
 
 while keyboard.is_pressed('q') == False:
     pg.press('space')
-    sleep(0.1)
+    sleep(0.2)
 
 print('ends')
