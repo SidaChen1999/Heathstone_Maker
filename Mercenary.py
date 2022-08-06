@@ -134,9 +134,9 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
         print("merc confirm")
         var['loss'] += 1
         if logger is None:
-            print('level; levels: %i; rounds: %i' % (var['win'], var['loss']))
+            print('round; levels: %i; rounds: %i' % (var['win'], var['loss']))
         else:
-            logger.info('level; levels: %i; rounds: %i' % (var['win'], var['loss']))
+            logger.info('round; levels: %i; rounds: %i' % (var['win'], var['loss']))
         pg.click(pg.center(cor_merc_confirm), duration=0.2)
         sleep(1, QT)
     elif pg.locate(img_no_enemy, screenshotIm, grayscale=True, confidence=confi) != None:

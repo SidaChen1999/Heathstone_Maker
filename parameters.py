@@ -55,33 +55,13 @@ end_turn_color = (21, 113, 1)
 end_turn_color_merc = (32, 166, 1)
 confi = 0.80
 timeout = 120 # seconds
-epsilon = 15
+epsilon = 20
 screensize = (int(pg.size()[0]/2), int(pg.size()[1]/2))
 game_window = (screensize[0]-960-8, screensize[1]-540-30, screensize[0]+960+8, screensize[1]+540+8)
 priority = {'enemy_hero': 1, 'enemy_minions': 2, 'minions': 3, 'hero': 4}
 
 class param():
     def __init__(self):
-        self.img_start = 'pics/start.jpg'
-        self.img_loss = 'pics/loss.jpg'
-        self.img_win = 'pics/win.jpg'
-        self.img_confirm = 'pics/confirm.jpg'
-        self.img_end_turn = 'pics/end_turn.jpg'
-        self.img_enemy_turn = 'pics/enemy_turn.jpg'
-        self.img_my_turn = 'pics/my_turn.jpg'
-        self.img_traditional_game = 'pics/traditional_game.jpg'
-        self.img_play = 'pics/play.jpg'
-        self.img_battlenet = 'pics/battlenet.jpg'
-        self.img_click = 'pics/click.jpg'
-        self.log_path = 'G:\Hearthstone\Logs\Power.log'
-
-        self.green = (213, 255, 139)
-        self.yellow = (255, 255, 30)
-        self.green2 = (208, 233, 97)
-        self.red = (255, 255, 126)
-        self.confi = 0.8
-        self.timeout = 120 # seconds
-        self.epsilon = 15
         screensize = (int(pg.size()[0]/2), int(pg.size()[1]/2))
         self.game_window = (screensize[0]-960-8, screensize[1]-540-30, screensize[0]+960+8, screensize[1]+540+8)
         self.update(self.game_window)
@@ -102,5 +82,5 @@ class param():
         self.default_mercenary = ((game_window[0]+game_window[2])/2-20, game_window[1]+330)
         self.waiting_pos = ((game_window[0]+game_window[2])/2, game_window[1]+870)
         self.merc_waiting_pos = ((game_window[0]+game_window[2])/2, game_window[3]-80)
-        self.my_turn_point = (game_window[0]+1559, game_window[1]+514)
+        self.my_turn_point = (game_window[0]+1559, game_window[1]+510)
         self.mid_point = (game_window[0]+game_window[2])/2, (game_window[1]+game_window[3])/2

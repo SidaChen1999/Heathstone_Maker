@@ -1,9 +1,10 @@
 import sys
 import traceback
 import keyboard
-from PyQt5.QtWidgets import QApplication, QPushButton, QLabel, QMainWindow, QRadioButton, QHBoxLayout, QWidget, QVBoxLayout
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import QRect, pyqtSlot, Qt
+from PyQt5.QtWidgets import QApplication, QPushButton, QLabel, QMainWindow, QRadioButton, \
+    QHBoxLayout, QWidget, QVBoxLayout, QScrollArea
+from PyQt5.QtGui import QFont, QIcon, QPalette, QColor
+from PyQt5.QtCore import QRect, pyqtSlot, Qt, QTimer
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
 from Hearthstone import my_turn, out_game
@@ -15,8 +16,30 @@ from parameters import *
 
 version = 'v0.0.7'
 buttom_size = (200, 60)
-window_pos = QRect(0, 30, 400, 1000)
+window_pos = QRect(0, 30, 300, 600)
 font = QFont('Arial', 14)
+
+class ScrollLabel(QScrollArea):
+ 
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+ 
+        self.setWidgetResizable(True)
+        self.content = QWidget(self)
+        self.setWidget(self.content)
+        lay = QVBoxLayout(self.content)
+ 
+        self.label = QLabel(self.content)
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.label.setWordWrap(True)
+        self.content.setMinimumWidth(window_pos.width())
+        lay.addWidget(self.label)
+ 
+    def setText(self, text):
+        self.label.setText(text)
+        x = self.verticalScrollBar().maximum()
+        self.verticalScrollBar().setValue(x)
+        # self.adjustSize()
 
 class App(QMainWindow):
     def __init__(self):
@@ -24,12 +47,17 @@ class App(QMainWindow):
         self.started = False
         self.mode = 0
         self.var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
-        self.logger_text = 'Logs:\n'
-        self.stats_text = 'Stats:\n'
+        self.logger_text = ""
+        self.stats_text = ""
         self.logger = None
         self.param = param()
 
-        self.label = QLabel('Select Mode: ')
+        self.initUI()
+        
+    def initUI(self):
+        parentLayout = QVBoxLayout()
+
+        self.label = QLabel('Mode: ')
         self.mode1 = QRadioButton('Traditional')
         self.mode1.animateClick()
         self.mode2 = QRadioButton('Mercenary')
@@ -37,40 +65,49 @@ class App(QMainWindow):
         self.mode1.toggled.connect(self.onRadioClicked)
         self.mode2.toggled.connect(self.onRadioClicked)
         self.mode3.toggled.connect(self.onRadioClicked)
-        layout = QHBoxLayout()
-        layout.addWidget(self.label)
-        layout.addWidget(self.mode1)
-        layout.addWidget(self.mode2)
-        layout.addWidget(self.mode3)
-        w = QWidget()
-        w.setLayout(layout)
-        w.setGeometry(0, 100, 400, 60)
-        self.setCentralWidget(w)
-        
-        self.logger_label = QLabel(self.logger_text, self)
-        self.logger_label.setGeometry(0, 500, window_pos.width(), 500)
-        self.stats_label = QLabel(self.stats_text, self)
-        self.stats_label.setGeometry(0, 900, window_pos.width(), 100)
-        self.Header = QLabel('Hearthstone Maker ' + version, self)
-        self.start = QPushButton('Start Script', self)
+        modeLayout = QVBoxLayout()
+        modeLayout.addWidget(self.label)
+        modeLayout.addWidget(self.mode1)
+        modeLayout.addWidget(self.mode2)
+        modeLayout.addWidget(self.mode3)
+        parentLayout.addLayout(modeLayout)
+
+        self.start = QPushButton('Start')
         self.start.clicked.connect(self.on_click_start)
         self.start.setCheckable(True)
-        self.start.setGeometry(
-            int((window_pos.width()-buttom_size[0])/2), 300, 
-            buttom_size[0], buttom_size[1])
-        self.stop = QPushButton('Stop Script', self)
+        self.start.resize(buttom_size[0], buttom_size[1])
+        self.start.setMinimumSize(buttom_size[0], buttom_size[1])
+        parentLayout.addWidget(self.start)
+        self.stop = QPushButton('Stop')
         self.stop.clicked.connect(self.on_click_stop)
         self.stop.setCheckable(True)
-        self.stop.setGeometry(
-            int((window_pos.width()-buttom_size[0])/2), 400, 
-            buttom_size[0], buttom_size[1])
-       
-        self.setFont(font)
-        self.initUI()
+        self.stop.resize(buttom_size[0], buttom_size[1])
+        self.stop.setMinimumSize(buttom_size[0], buttom_size[1])
+        parentLayout.addWidget(self.stop)
+
+        parentLayout.addWidget(QLabel("Logs:"))
+        loggerWidget = QWidget()
+        loggerWidget.setMinimumSize(window_pos.width(), 220)
+        self.logger_label = ScrollLabel(loggerWidget)
+        self.logger_label.setMinimumSize(window_pos.width(), 220)
+        self.logger_label.setText(self.logger_text)
+        parentLayout.addWidget(loggerWidget)
+
+        parentLayout.addWidget(QLabel("Stats:"))
+        statsWidget = QWidget()
+        statsWidget.setMinimumSize(window_pos.width(), 80)
+        self.stats_label = ScrollLabel(statsWidget)
+        self.stats_label.setMinimumSize(window_pos.width(), 80)
+        self.stats_label.setText(self.stats_text)
+        parentLayout.addWidget(statsWidget)
         
-    def initUI(self):
-        self.setWindowTitle("Heathstone Maker")
-        self.setGeometry(window_pos)
+        parentWidget = QWidget()
+        parentWidget.setLayout(parentLayout)
+        self.setCentralWidget(parentWidget)
+
+        self.setFont(font)
+        self.setWindowTitle('Hearthstone Maker ' + version)
+        self.move(0, 0)
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
         
     @pyqtSlot()
@@ -171,18 +208,18 @@ class App(QMainWindow):
     def update_log_UI(self):
         with open(self.log_file_name, 'r', encoding='UTF-8') as log_file:
             lines = log_file.readlines()
-            self.logger_text = 'Logs:\n' + ''.join([a[11:] for a in lines[-8:]])
+            self.logger_text = ''.join([a[11:] for a in lines[-20:]])
             self.logger_label.setText(self.logger_text)
-            if lines[-1][24:].startswith(('loss','win')):
+            if lines[-1][24:].startswith(('loss', 'win', 'level', 'round', 'error')):
                 self.update_stats_UI()
 
     def update_stats_UI(self):
         if self.var['win'] + self.var['loss'] != 0:
             self.stats_text = 'win: %i; loss: %i; error: %i; win rate: %.4f' % \
                 (self.var['win'], self.var['loss'], self.var['error'], self.var['win']/(self.var['win']+self.var['loss']))
-            self.stats_label.setText('Stats:\n' + self.stats_text)
+            self.stats_label.setText(self.stats_text)
         else:
-            self.stats_label.setText('Stats:\n')
+            self.stats_label.setText('')
     
     def onRadioClicked(self):
         radioBtn = self.sender()

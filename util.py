@@ -49,9 +49,6 @@ def check_state_merc(var, param:param, last_state=0, simple=False):
        delta(color, my_turn_color_merc) < epsilon:
         print("My turn")
         next_state = 1
-    # elif delta(color, enemy_turn_color) < epsilon or delta(color, enemy_turn_color2) < epsilon:
-    #     print("Enemy turn")
-    #     next_state = 2
     elif delta(color, end_turn_color) < epsilon or \
          delta(color, end_turn_color_merc) < epsilon:
         print("End turn")
@@ -76,7 +73,6 @@ def check_state(var, last_state=0, simple=False):
     cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
     cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
     cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
-    cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
     cor_end_turn = pg.locate(img_end_turn, screenshotIm, grayscale=True, confidence=confi)
     if cor_my_turn != None:
         next_state = 1
@@ -99,6 +95,7 @@ def check_state(var, last_state=0, simple=False):
 
 def end_turn(param:param, QT:bool=None):
     pg.click(param.my_turn_point[0], param.my_turn_point[1], duration=0.2)
+    pg.click(param.enemy_hero, clicks=1, interval=0.2, button='RIGHT', duration=0.2)
     sleep(1, QT)
     return
 
