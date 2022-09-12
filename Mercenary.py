@@ -5,7 +5,7 @@ import pyautogui as pg
 from parameters import *
 from datetime import datetime
 from util import GetWindowRectFromName, check_state_merc, end_turn, error_state, \
-    event, find_color, logger_deconstruct, logger_init, setWindow, sleep, update_stats
+    event, find_color, log, logger_deconstruct, logger_init, setWindow, sleep, update_stats
 
 def my_turn(param:param):
     pic_cards = pg.screenshot('test_pics/cards.jpg', region=param.cards)
@@ -19,13 +19,9 @@ def my_turn(param:param):
     x_minions, y_minions = find_color(pic_mercenary_ability, 5, epsilon, green, green2, yellow)
     if x_minions is not None:
         pg.click(x_minions+param.mercenary_ability[0], y_minions+param.mercenary_ability[1]+40, duration=0.2)
-        pic_enemy_minions = pg.screenshot('test_pics/enemy_mercenary.jpg', region=param.enemy_mercenary)
-        x_enemy, y_enemy = find_color(pic_enemy_minions, 5, epsilon, red)
-        if x_enemy is not None:
-            pg.click(x_enemy+param.enemy_mercenary[0], y_enemy+param.enemy_mercenary[1], duration=0.2)
-        else:
-            pg.click(param.default_mercenary, duration=0.2)
-    pg.click(param.enemy_hero, clicks=1, interval=0.2, button='RIGHT', duration=0.2)
+        pg.click(param.default_mercenary, duration=0.2)
+    pg.moveTo(param.enemy_hero, duration=0.2)
+    # pg.click(param.enemy_hero, clicks=1, interval=0.2, button='RIGHT', duration=0.2)
 
     if x_minions is None and x_cards is None:
         cor_buble = pg.locateOnScreen(img_buble, grayscale=True, confidence=confi)
@@ -63,6 +59,10 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
         pg.click(pg.center(cor_mercenary), duration=0.2)
         print("mercenary")
         sleep(3, QT)
+    elif cor_treasure != None:
+        print("merc treasure")
+        pg.click(pg.center(cor_treasure), duration=0.2)
+        sleep(1, QT)
     elif cor_travel_point != None:
         pg.click(pg.center(cor_travel_point), duration=0.2)
         print("travel point")
@@ -87,10 +87,6 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
         print("merc proceed")
         pg.click(pg.center(cor_proceed), duration=0.2)
         sleep(1, QT)
-    elif cor_treasure != None:
-        print("merc treasure")
-        pg.click(pg.center(cor_treasure), duration=0.2)
-        sleep(1, QT)
     elif cor_merc_level != None:
         print("merc choose level")
         pg.click(pg.center(cor_merc_level), duration=0.2)
@@ -98,10 +94,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     elif cor_victory != None:
         print("merc victory")
         var['win'] += 1
-        if logger is None:
-            print('level; levels: %i; rounds: %i' % (var['win'], var['loss']))
-        else:
-            logger.info('level; levels: %i; rounds: %i' % (var['win'], var['loss']))
+        log('level; levels: %i; rounds: %i' % (var['win'], var['loss']), logger)
         pg.click((game_window[0]+game_window[2])/2, (game_window[1]+game_window[3])/2, duration=0.2)
         while True:
             cor_acquire = pg.locateOnScreen(img_acquire, grayscale=True, confidence=0.6)
@@ -133,10 +126,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     elif cor_merc_confirm != None:
         print("merc confirm")
         var['loss'] += 1
-        if logger is None:
-            print('round; levels: %i; rounds: %i' % (var['win'], var['loss']))
-        else:
-            logger.info('round; levels: %i; rounds: %i' % (var['win'], var['loss']))
+        log('round; levels: %i; rounds: %i' % (var['win'], var['loss']), logger)
         pg.click(pg.center(cor_merc_confirm), duration=0.2)
         sleep(1, QT)
     elif pg.locate(img_no_enemy, screenshotIm, grayscale=True, confidence=confi) != None:

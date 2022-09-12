@@ -5,7 +5,7 @@ import logging
 import traceback
 from parameters import *
 from util import GetWindowRectFromName, check_state, end_turn, error_state, \
-    find_color, logger_deconstruct, logger_init, setWindow, sleep, event, update_stats
+    find_color, log, logger_deconstruct, logger_init, setWindow, sleep, event, update_stats
 
 def my_turn(param:param):
     pic_cards = pg.screenshot('test_pics/cards.jpg', region=param.cards)
@@ -64,10 +64,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
 
     elif pg.locate(img_loss, screenshotIm, grayscale=True, confidence=confi) != None:
         var['loss'] += 1
-        if logger is None:
-            print('loss; win: %i; loss: %i' % (var['win'], var['loss']))
-        else:
-            logger.info('loss; win: %i; loss: %i' % (var['win'], var['loss']))
+        log('loss; win: %i; loss: %i' % (var['win'], var['loss']), logger)
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             if event.is_set():
                 return
@@ -77,10 +74,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
                     return
     elif pg.locate(img_win, screenshotIm, grayscale=True, confidence=confi) != None:
         var['win'] += 1
-        if logger is None:
-            print('win; win: %i; loss: %i' % (var['win'], var['loss']))
-        else:
-            logger.info('win; win: %i; loss: %i' % (var['win'], var['loss']))
+        log('win; win: %i; loss: %i' % (var['win'], var['loss']), logger)
         while pg.locateOnScreen(img_start, grayscale=False, confidence=confi) == None:
             if event.is_set():
                 return
@@ -88,6 +82,20 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
             sleep(1, QT)
             if (datetime.now() - var['timestamp']).seconds > timeout:
                     return
+
+counter = 0
+def surrender(logger: logging.Logger=None):
+    global counter
+    counter += 1
+    log("Surrendered %i times" % counter, logger)
+    keyboard.send("esc")
+    sleep(0.5)
+    cor_surrender = pg.locateCenterOnScreen(img_surrender, grayscale=True, confidence=confi)
+    if cor_surrender != None:
+        pg.click(cor_surrender, duration=0.2)
+    else:
+        keyboard.send("esc")
+    sleep(1)
 
 if __name__ == '__main__':
     log_file_start = 'log/'+datetime.now().strftime("%Y-%m-%d,%H-%M-%S")+'.log'
@@ -112,7 +120,7 @@ if __name__ == '__main__':
     logger.info("script starts")
     while keyboard.is_pressed('q') == False:
         try:
-            state = check_state(var, params, state)
+            state = check_state(var, state)
             logger.info('state: %i' % state)
             if state == 0:
                 out_game(var, params, logger)
@@ -125,6 +133,8 @@ if __name__ == '__main__':
                 var['timestamp'] = datetime.now()
             elif state == 4:
                 end_turn(params)
+            elif state == 5:
+                surrender(logger)
         except (KeyboardInterrupt, pg.FailSafeException):
             break
         except OSError:

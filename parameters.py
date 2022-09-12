@@ -36,6 +36,7 @@ img_jump = 'pics/jump.jpg'
 img_pickup = 'pics/pick_up.jpg'
 img_reveal = 'pics/reveal.jpg'
 img_buble = 'pics/buble.jpg'
+img_surrender = 'pics/surrender.jpg'
 
 hwnd_name = '炉石传说'
 pid_name = 'Hearthstone.exe'

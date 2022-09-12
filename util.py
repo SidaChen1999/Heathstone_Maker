@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+from tokenize import String
 import pyautogui as pg
 from parameters import *
 from threading import Event
@@ -68,7 +69,10 @@ def check_state_merc(var, param:param, last_state=0, simple=False):
         var['timestamp'] = datetime.now()
     return next_state
 
+flag = 0
+turn_flag = 0
 def check_state(var, last_state=0, simple=False):
+    global flag, turn_flag
     screenshotIm = pg.screenshot()
     cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
     cor_my_turn = pg.locate(img_my_turn, screenshotIm, grayscale=False, confidence=confi)
@@ -89,8 +93,23 @@ def check_state(var, last_state=0, simple=False):
     if last_state == next_state:
         if (datetime.now() - var['timestamp']).seconds > timeout:
             next_state = 3
+        elif last_state == 1:
+            print("seconds: ", (datetime.now() - var['timestamp']).seconds)
+            if (datetime.now() - var['timestamp']).seconds > 50:
+                next_state == 4
+                if flag == 0:
+                    flag = 1
+                elif flag == 1 and turn_flag == 1:
+                    next_state = 5
+                    flag = 0
+                    turn_flag = 0
     else:
         var['timestamp'] = datetime.now()
+        if next_state == 2 and flag == 1 and turn_flag == 0:
+            turn_flag = 1
+        elif turn_flag == 1 and next_state == 4:
+            flag = 0
+            turn_flag = 0
     return next_state
 
 def end_turn(param:param, QT:bool=None):
@@ -240,12 +259,8 @@ def update_stats(var, logger:logging.Logger=None, saving=True):
         for row in csvreader:
             rows.append(row)
     if var['win'] + var['loss'] != 0:
-        if logger is None:
-            print('win: %i; loss: %i; error: %i; win rate: %.4f' % \
-                (var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss'])))
-        else:
-            logger.info('win: %i; loss: %i; error: %i; win rate: %.4f' % \
-                (var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss'])))
+        log('win: %i; loss: %i; error: %i; win rate: %.4f' % \
+            (var['win'], var['loss'], var['error'], var['win']/(var['win']+var['loss'])), logger)
         rows.append([str(var[a]) for a in var])
         if saving:
             with open('dist/stats.csv', 'w', newline='') as csvfile:
@@ -257,7 +272,10 @@ def update_stats(var, logger:logging.Logger=None, saving=True):
         wins += int(row[0])
         losses += int(row[1])
     if wins + losses != 0:
-        if logger is None:
-            print('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
-        else:
-            logger.info('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)))
+        log('total wins: %i, losses: %i, win rate: %.4f'%(wins, losses, wins/(wins+losses)), logger)
+    
+def log(str:String, logger:logging.Logger=None):
+    if logger is None:
+        print(str)
+    else:
+        logger.info(str)

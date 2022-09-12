@@ -7,7 +7,7 @@ from PyQt5.QtGui import QFont, QIcon, QPalette, QColor
 from PyQt5.QtCore import QRect, pyqtSlot, Qt, QTimer
 import pyautogui as pg
 from datetime import datetime, timedelta, tzinfo, timezone
-from Hearthstone import my_turn, out_game
+from Hearthstone import my_turn, out_game, surrender
 from Mercenary import my_turn as my_turn_merc
 from Mercenary import out_game as out_game_merc
 from util import GetWindowRectFromName, check_state, check_state_merc, end_turn, error_state, \
@@ -172,6 +172,8 @@ class App(QMainWindow):
                     self.var['timestamp'] = datetime.now()
                 elif state == 4:
                     end_turn(self.param)
+                elif state == 5:
+                    surrender(self.logger)
                 QApplication.processEvents()
             except (KeyboardInterrupt, pg.FailSafeException):
                 self.stop.click()
@@ -190,7 +192,8 @@ class App(QMainWindow):
                     break
         
         self.logger.info("script ends")
-        update_stats(self.var, self.logger)
+        if self.mode == 0:
+            update_stats(self.var, self.logger)
         self.update_log_UI()
         logger_deconstruct(self.logger, self.log_file_name)
         self.logger = None
