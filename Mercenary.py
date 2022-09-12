@@ -139,8 +139,6 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
                 y_enemy+param.enemy_region[1]+20, duration=0.2)
             sleep(0.1, QT)
             pg.mouseUp()
-            # pg.click(x_enemy+param.enemy_region[0], y_enemy+param.enemy_region[1]+20,
-            #     clicks=2, interval=0.5, duration=0.2)
             pg.click(param.merc_waiting_pos, duration=0.2)
     elif cor_select_treasure != None:
         print("merc select treasure")
@@ -165,7 +163,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
                         return
                     if (datetime.now() - var['timestamp']).seconds > timeout:
                             return
-                    sleep(0.5, QT)
+                    sleep(1, QT)
         else:
             pg.click(param.merc_waiting_pos, duration=0.2)
     elif cor_jump != None:

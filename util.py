@@ -199,7 +199,7 @@ def setWindow(name, rect) -> bool:
     new_placement = list(placement)
     new_placement[0] = -1
     new_placement[1] = win32con.SW_SHOWNORMAL
-    new_placement[4] = game_window
+    new_placement[4] = rect
     win32gui.SetWindowPlacement(hwnd, new_placement)
     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
     win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0, 

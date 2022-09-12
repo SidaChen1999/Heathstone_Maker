@@ -16,7 +16,7 @@ from parameters import *
 
 version = 'v0.0.7'
 buttom_size = (200, 60)
-window_pos = QRect(0, 30, 300, 600)
+window_pos = QRect(0, 30, 320, 600)
 font = QFont('Arial', 14)
 
 class ScrollLabel(QScrollArea):
@@ -123,14 +123,18 @@ class App(QMainWindow):
         self.logger = logger_init(self.log_file_name)
 
         rect = GetWindowRectFromName(hwnd_name)
+        success = True
         if rect is None:
             error_state(self.var, self.param, self.logger, self.started)
             rect = GetWindowRectFromName(hwnd_name)
         else:
-            setWindow(hwnd_name, game_window)
+            success = setWindow(hwnd_name, game_window)
+            sleep(2, self.started)
             rect = GetWindowRectFromName(hwnd_name)
         if rect is not None:
             self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
+        if not success:
+            self.param.update(rect)
 
         self.logger.info("script starts")
         state = 0
@@ -144,15 +148,20 @@ class App(QMainWindow):
                 elif self.mode == 1:
                     state = check_state_merc(self.var, self.param ,state)
                 elif self.mode == 2:
-                    while keyboard.is_pressed('space') == False:
+                    cnt = 0
+                    while self.started and keyboard.is_pressed('space') == False:
                         pg.press('space')
                         sleep(0.2)
+                        cnt += 1
+                        self.logger.info('Click:  %i' % cnt)
+                        self.update_log_UI()
                         QApplication.processEvents()
                     self.logger.info("script ends")
+                    logger_deconstruct(self.logger, self.log_file_name)
                     self.logger = None
                     self.stop.animateClick()
                     return
-                self.logger.info('state: %i' % state)
+                self.logger.info('state:  %i' % state)
                 self.update_log_UI()
                 if state == 0:
                     if self.mode == 0:
