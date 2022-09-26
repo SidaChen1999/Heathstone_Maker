@@ -4,14 +4,14 @@ import keyboard
 from PyQt5.QtWidgets import QApplication, QPushButton, QLabel, QMainWindow, QRadioButton, \
     QHBoxLayout, QWidget, QVBoxLayout, QScrollArea
 from PyQt5.QtGui import QFont, QIcon, QPalette, QColor
-from PyQt5.QtCore import QRect, pyqtSlot, Qt, QTimer
+from PyQt5.QtCore import QRect, pyqtSlot, Qt
 import pyautogui as pg
-from datetime import datetime, timedelta, tzinfo, timezone
+from datetime import datetime
 from Hearthstone import my_turn, out_game, surrender
 from Mercenary import my_turn as my_turn_merc
 from Mercenary import out_game as out_game_merc
 from util import GetWindowRectFromName, check_state, check_state_merc, end_turn, error_state, \
-    logger_deconstruct, logger_init, setWindow, sleep, event, update_stats
+    logger_deconstruct, logger_init, setWindow, sleep, event, update_stats, log
 from parameters import *
 
 version = 'v0.0.7'
@@ -132,11 +132,11 @@ class App(QMainWindow):
             sleep(2, self.started)
             rect = GetWindowRectFromName(hwnd_name)
         if rect is not None:
-            self.logger.info('game window: (%i, %i, %i, %i)'%(rect))
+            log('game window: (%i, %i, %i, %i)'%(rect), self.logger)
         if not success:
             self.param.update(rect)
 
-        self.logger.info("script starts")
+        log("script starts", self.logger)
         state = 0
         self.var = {'win': 0, 'loss': 0, 'error': 0, 'timestamp': datetime.now()}
         self.update_stats_UI()
@@ -144,9 +144,9 @@ class App(QMainWindow):
         while self.started and keyboard.is_pressed('q') == False:
             try:
                 if self.mode == 0:
-                    state = check_state(self.var, state)
+                    state = check_state(self.var, state, logger=self.logger)
                 elif self.mode == 1:
-                    state = check_state_merc(self.var, self.param ,state)
+                    state = check_state_merc(self.var, self.param, state)
                 elif self.mode == 2:
                     cnt = 0
                     while self.started and keyboard.is_pressed('space') == False:
@@ -156,12 +156,12 @@ class App(QMainWindow):
                         self.logger.info('Click:  %i' % cnt)
                         self.update_log_UI()
                         QApplication.processEvents()
-                    self.logger.info("script ends")
+                    log("script ends", self.logger)
                     logger_deconstruct(self.logger, self.log_file_name)
                     self.logger = None
                     self.stop.animateClick()
                     return
-                self.logger.info('state:  %i' % state)
+                log('state:  %i' % state, self.logger)
                 self.update_log_UI()
                 if state == 0:
                     if self.mode == 0:
@@ -188,19 +188,19 @@ class App(QMainWindow):
                 self.stop.click()
                 break
             except OSError:
-                self.logger.info(traceback.format_exc())
+                log(traceback.format_exc(), self.logger)
                 continue
             except:
-                self.logger.info(traceback.format_exc())
+                log(traceback.format_exc(), self.logger)
                 try:
                     error_state(self.var, self.param, self.logger, self.started)
                     self.var['timestamp'] = datetime.now()
                 except:
-                    self.logger.info(traceback.format_exc())
+                    log(traceback.format_exc(), self.logger)
                     self.stop.click()
                     break
         
-        self.logger.info("script ends")
+        log("script ends", self.logger)
         if self.mode == 0:
             update_stats(self.var, self.logger)
         self.update_log_UI()
@@ -238,13 +238,13 @@ class App(QMainWindow):
         if radioBtn.isChecked():
             if radioBtn.text() == "Traditional":
                 self.mode = 0
-                print("Mode Traditional")
+                log("Mode Traditional", self.logger)
             elif radioBtn.text() == "Mercenary":
                 self.mode = 1
-                print("Mode Mercenary")
+                log("Mode Mercenary", self.logger)
             elif radioBtn.text() == "Packages":
                 self.mode = 2
-                print("Mode Packages")
+                log("Mode Packages", self.logger)
         
 
 if __name__ == '__main__':

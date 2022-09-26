@@ -157,6 +157,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
                 pg.click(param.merc_waiting_pos, duration=0.2)
             else:
                 pg.click(pg.locateOnScreen(img_receive, grayscale=True, confidence=confi), duration=0.2)
+                sleep(0.5, QT)
                 while pg.locateOnScreen(img_campfire, grayscale=True, confidence=confi) == None:
                     pg.click(param.mid_point, duration=0.2)
                     if event.is_set():

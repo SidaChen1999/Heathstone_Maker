@@ -45,20 +45,20 @@ def check_state_merc(var, param:param, last_state=0, simple=False):
     screenshotIm = pg.screenshot('test_pics/game.jpg', region=param.game_window)
     cor_play = pg.locate(img_play, screenshotIm, grayscale=True, confidence=confi)
     color = pg.pixel(param.my_turn_point[0], param.my_turn_point[1])
-    print("state color: ", color)
+    log("state color: %s" % (color,))
     if delta(color, my_turn_color) < epsilon or \
        delta(color, my_turn_color_merc) < epsilon:
-        print("My turn")
+        log("My turn")
         next_state = 1
     elif delta(color, end_turn_color) < epsilon or \
          delta(color, end_turn_color_merc) < epsilon:
-        print("End turn")
+        log("End turn")
         next_state = 4
     elif cor_play != None:
-        print("Error")
+        log("Error")
         next_state = 3
     else:
-        print("Out game")
+        log("Out game")
         next_state = 0
     if simple:
         return next_state
@@ -71,7 +71,7 @@ def check_state_merc(var, param:param, last_state=0, simple=False):
 
 flag = 0
 turn_flag = 0
-def check_state(var, last_state=0, simple=False):
+def check_state(var, last_state=0, simple=False, logger: logging.Logger = None):
     global flag, turn_flag
     screenshotIm = pg.screenshot()
     cor_enemy_turn = pg.locate(img_enemy_turn, screenshotIm, grayscale=False, confidence=confi)
@@ -94,9 +94,9 @@ def check_state(var, last_state=0, simple=False):
         if (datetime.now() - var['timestamp']).seconds > timeout:
             next_state = 3
         elif last_state == 1:
-            print("seconds: ", (datetime.now() - var['timestamp']).seconds)
+            log("seconds: %d" % (datetime.now() - var['timestamp']).seconds, logger)
             if (datetime.now() - var['timestamp']).seconds > 50:
-                next_state == 4
+                next_state = 4
                 if flag == 0:
                     flag = 1
                 elif flag == 1 and turn_flag == 1:
@@ -120,10 +120,7 @@ def end_turn(param:param, QT:bool=None):
 
 def error_state(var, param:param, logger: logging.Logger=None, QT:bool=None, merc=False):
     var['error'] += 1
-    if logger is None:
-        print('error: %i' % var['error'])
-    else:
-        logger.error('error: %i' % var['error'])
+    log('error: %i' % var['error'], logger)
     cor_play = pg.locateCenterOnScreen(img_play, grayscale=True, confidence=confi)
     if cor_play != None:
         pg.click(cor_play, duration=0.2)
@@ -248,7 +245,7 @@ def logger_deconstruct(logger, filename=None):
         try:
             os.rename(filename, log_file_end)
         except:
-            print('rename log file error')
+            log('rename log file error')
     return
     
 def update_stats(var, logger:logging.Logger=None, saving=True):

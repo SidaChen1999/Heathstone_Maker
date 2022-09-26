@@ -1,4 +1,5 @@
 import os
+import random
 import signal
 import traceback
 import pyautogui as pg
@@ -24,6 +25,7 @@ if delta(color, my_turn_color_merc) < epsilon:
     print("My turn")
 print(delta(color, my_turn_color_merc))
 
-
+tup = (1,2,3)
+print("something %s" % (tup,))
 
 print('ends')
