@@ -62,14 +62,17 @@ class App(QMainWindow):
         self.mode1.animateClick()
         self.mode2 = QRadioButton('Mercenary')
         self.mode3 = QRadioButton('Packages')
+        self.mode4 = QRadioButton('Surrender')
         self.mode1.toggled.connect(self.onRadioClicked)
         self.mode2.toggled.connect(self.onRadioClicked)
         self.mode3.toggled.connect(self.onRadioClicked)
+        self.mode4.toggled.connect(self.onRadioClicked)
         modeLayout = QVBoxLayout()
         modeLayout.addWidget(self.label)
         modeLayout.addWidget(self.mode1)
         modeLayout.addWidget(self.mode2)
         modeLayout.addWidget(self.mode3)
+        modeLayout.addWidget(self.mode4)
         parentLayout.addLayout(modeLayout)
 
         self.start = QPushButton('Start')
@@ -143,7 +146,7 @@ class App(QMainWindow):
 
         while self.started and keyboard.is_pressed('q') == False:
             try:
-                if self.mode == 0:
+                if self.mode == 0 or self.mode == 3:
                     state = check_state(self.var, state, logger=self.logger)
                 elif self.mode == 1:
                     state = check_state_merc(self.var, self.param, state)
@@ -168,9 +171,14 @@ class App(QMainWindow):
                         out_game(self.var, self.param, self.logger, self.started)
                     elif self.mode == 1:
                         out_game_merc(self.var, self.param, self.logger, self.started)
+                    elif self.mode == 3:
+                        confirm = out_game(self.var, self.param, self.logger, self.started)
+                        if confirm == 1:
+                            state = 5
+                            surrender(self.logger)
                     self.update_log_UI()
                 elif state == 1:
-                    if self.mode == 0:
+                    if self.mode == 0 or self.mode == 3:
                         my_turn(self.param)
                     elif self.mode == 1:
                         my_turn_merc(self.param)
@@ -245,6 +253,9 @@ class App(QMainWindow):
             elif radioBtn.text() == "Packages":
                 self.mode = 2
                 log("Mode Packages", self.logger)
+            elif radioBtn.text() == "Surrender":
+                self.mode = 3
+                log("Mode Surrender", self.logger)
         
 
 if __name__ == '__main__':

@@ -27,6 +27,7 @@ img_merc_confirm = 'pics/merc_confirm.jpg'
 img_proceed = 'pics/proceed.jpg'
 img_no_enemy = 'pics/no_enemy.jpg'
 img_open_treasure = 'pics/open_treasure.jpg'
+img_open_extra_treasure = 'pics/open_extra_treasure.jpg'
 img_treasure = 'pics/treasure.jpg'
 img_finish = 'pics/finish.jpg'
 img_select_treasure = 'pics/select_treasure.jpg'
@@ -37,7 +38,8 @@ img_pickup = 'pics/pick_up.jpg'
 img_reveal = 'pics/reveal.jpg'
 img_buble = 'pics/buble.jpg'
 img_surrender = 'pics/surrender.jpg'
-
+img_empty_mission = 'pics/empty_mission.jpg'
+img_minion_missions = 'pics/minion_missions.jpg'
 hwnd_name = '炉石传说'
 pid_name = 'Hearthstone.exe'
 
@@ -48,6 +50,7 @@ merc_green = (186, 255, 170)
 red = (255, 255, 126)
 blue = (55, 222, 255)
 gold = (255, 255, 25)
+treasure_green = (97, 168, 26)
 my_turn_color = (136, 117, 1)
 my_turn_color_merc = (207, 172, 2)
 enemy_turn_color = (112, 95, 73)

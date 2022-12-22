@@ -54,6 +54,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
                 return
         pg.click(pg.locateCenterOnScreen(img_confirm, grayscale=True, confidence=confi), duration=0.2)
         sleep(2, QT)
+        return 1
         
     elif cor_traditional_game != None:
         pg.click(pg.center(cor_traditional_game), duration=0.2)

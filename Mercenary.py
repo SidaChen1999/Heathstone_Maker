@@ -31,6 +31,7 @@ def my_turn(param:param):
 
 def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     screenshotIm = pg.screenshot()
+    cor_close = pg.locate(img_close, screenshotIm, grayscale=True, confidence=confi)
     cor_merc_start = pg.locate(img_merc_start, screenshotIm, grayscale=True, confidence=confi)
     cor_mercenary = pg.locate(img_mercenary, screenshotIm, grayscale=True, confidence=confi)
     cor_travel_point = pg.locate(img_travel_point, screenshotIm, grayscale=True, confidence=0.6)
@@ -43,6 +44,7 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     cor_treasure = pg.locate(img_treasure, screenshotIm, grayscale=True, confidence=confi)
     cor_merc_level = pg.locate(img_mercenary_level, screenshotIm, grayscale=True, confidence=confi)
     cor_open_treasure = pg.locate(img_open_treasure, screenshotIm, grayscale=False, confidence=0.9)
+    cor_open_extra_trasure = pg.locate(img_open_extra_treasure, screenshotIm, grayscale=False, confidence=0.9)
     cor_finish = pg.locate(img_finish, screenshotIm, grayscale=False, confidence=0.6)
     cor_merc_confirm = pg.locate(img_merc_confirm, screenshotIm, grayscale=True, confidence=confi)
     cor_select_treasure = pg.locate(img_select_treasure, screenshotIm, grayscale=True, confidence=confi)
@@ -117,6 +119,11 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
     elif cor_open_treasure != None:
         print("merc opened treasure")
         open_treasure(var, param, logger, QT)
+    elif cor_open_extra_trasure != None:
+        print("merc open extra treasure")
+        pg.click(pg.center(cor_open_extra_trasure), duration=0.2)
+        sleep(1, QT)
+        open_treasure(var, param, logger, QT)
     elif cor_finish != None:
         print("merc open treasure finish")
         pg.click(pg.center(cor_finish), duration=0.2)
@@ -147,6 +154,10 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
             pg.click(pg.locateOnScreen(img_acquire, grayscale=True, confidence=0.6), duration=0.2)
     elif cor_campfire != None:
         print("merc mission")
+        cor_minion_missions = pg.locateOnScreen(img_minion_missions, grayscale=False, confidence=confi)
+        if cor_minion_missions != None:
+            pg.click(cor_minion_missions, duration=0.2)
+            sleep(0.5, QT)
         pic_mission_region = pg.screenshot('test_pics/mission_region.jpg', region=param.treasure_region)
         x_mission, y_mission = find_color(pic_mission_region, 2, 10, blue)
         print("mission at: ", (x_mission, y_mission))
@@ -158,13 +169,15 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
             else:
                 pg.click(pg.locateOnScreen(img_receive, grayscale=True, confidence=confi), duration=0.2)
                 sleep(0.5, QT)
-                while pg.locateOnScreen(img_campfire, grayscale=True, confidence=confi) == None:
+                while pg.locateOnScreen(img_empty_mission, grayscale=False, confidence=confi) == None:
                     pg.click(param.mid_point, duration=0.2)
                     if event.is_set():
                         return
                     if (datetime.now() - var['timestamp']).seconds > timeout:
                             return
                     sleep(1, QT)
+                sleep(0.5, QT)
+                pg.click(param.merc_waiting_pos, duration=0.2)
         else:
             pg.click(param.merc_waiting_pos, duration=0.2)
     elif cor_jump != None:
@@ -179,13 +192,16 @@ def out_game(var, param:param, logger: logging.Logger=None, QT:bool=None):
         print("merc reveal")
         pg.click(pg.center(cor_reveal), clicks=2, interval=0.5, duration=0.2)
         sleep(1, QT)
+    elif cor_close != None:
+        pg.click(pg.center(cor_close), duration=0.2)
+        sleep(1, QT)
     # pg.click(param.merc_waiting_pos, duration=0.2)
     # pg.click(param.merc_waiting_pos, button='RIGHT', duration=0.2)
 
 def open_treasure(var, param:param, logger: logging.Logger=None, QT:bool=None):
     pic_treasure_region = pg.screenshot('test_pics/treasure_region.jpg', region=param.treasure_region)
-    x_treasure, y_treasure = find_color(pic_treasure_region, 2, 10, gold)
-    print("treasure at: ", (x_treasure, y_treasure))
+    x_treasure, y_treasure = find_color(pic_treasure_region, 2, 10, gold, treasure_green)
+    log("treasure at: (%s, %s)" % (x_treasure, y_treasure), logger)
     if x_treasure is not None:
         pg.click(x_treasure+param.treasure_region[0], y_treasure+param.treasure_region[1], duration=0.2)
         pg.click(param.merc_waiting_pos, duration=0.2)

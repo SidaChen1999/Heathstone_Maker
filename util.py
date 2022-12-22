@@ -127,7 +127,7 @@ def error_state(var, param:param, logger: logging.Logger=None, QT:bool=None, mer
         sleep(10, QT)
     else:
         proc = checkIfProcessRunning(pid_name, kill=True)
-        sleep(1, QT)
+        sleep(5, QT)
         if proc == None:
             cor_battlenet = pg.locateCenterOnScreen(img_battlenet, grayscale=True, confidence=confi)
             if cor_battlenet != None:
